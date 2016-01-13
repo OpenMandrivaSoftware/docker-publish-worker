@@ -10,18 +10,3 @@ gem 'hiredis'
 
 gem 'log4r', '1.1.10'
 gem 'api_smith', '1.2.0'
-
-group :development do
-  # deploy
-  gem 'capistrano', :require => false
-  gem 'rvm-capistrano', :require => false
-  gem 'cape', :require => false
-  gem 'capistrano_colors', :require => false
-end
-
-group :test do
-  gem 'rspec'
-  gem 'shoulda'
-  gem 'rr'
-  gem 'mock_redis'
-end
