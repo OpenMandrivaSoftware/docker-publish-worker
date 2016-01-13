@@ -1,4 +1,3 @@
-require 'net/ssh'
 require 'abf-worker/outputters/logger'
 require 'abf-worker/outputters/live_outputter'
 require 'socket'
