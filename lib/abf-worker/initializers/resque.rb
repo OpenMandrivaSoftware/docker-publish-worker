@@ -1,9 +1,13 @@
+require 'redis'
 require 'resque'
 
 env = ENV['ENV'] || 'development'
-resque_config = YAML.load_file("#{ROOT}/config/resque.yml")[env]
-Resque.redis  = Redis.new(host:        resque_config.gsub(/\:.*$/, ''),
-                          port:        resque_config.gsub(/.*\:/, ''),
-                          password:    'redis',
+redis_host = ENV['REDIS_HOST']
+redis_port = ENV['REDIS_PORT']
+redis_password = ENV['REDIS_PASSWORD'].nil? ? '' : ENV['REDIS_PASSWORD']
+
+redis_url = 'redis://:' + redis_password + '@' + redis_host + ':' + redis_port
+ 
+Resque.redis  = Redis.new(url:         redis_url,
                           driver:      :hiredis,
                           timeout:     30)

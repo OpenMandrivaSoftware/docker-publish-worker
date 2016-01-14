@@ -38,7 +38,7 @@ module AbfWorker::Runners
     def run_build_script(rollback_activity = false)
       init_packages_lists
       init_gpg_keys unless rollback_activity
-      logger.log "Run #{rollback_activity ? 'rollback activity ' : ''}script..."
+      puts "Run #{rollback_activity ? 'rollback activity ' : ''}script..."
 
       command = base_command_for_run
       command << (rollback_activity ? @rollback_script : @main_script)
@@ -55,7 +55,7 @@ module AbfWorker::Runners
 
     def base_command_for_run
       [
-        'cd ' + AbfWorker::SCRIPTS_ROOT + '/' + @platform_type + '/publish-packages;',
+        'cd ' + ROOT + '/scripts/' + @platform_type + ';',
         'sudo ',
         @cmd_params,
         ' /bin/bash '
@@ -63,7 +63,7 @@ module AbfWorker::Runners
     end
 
     def init_packages_lists
-      logger.log 'Initialize lists of new and old packages...'
+      puts 'Initialize lists of new and old packages...'
 
       [@packages, @old_packages].each_with_index do |packages, index|
         prefix = index == 0 ? 'new' : 'old'
@@ -76,7 +76,8 @@ module AbfWorker::Runners
 
     def add_packages_to_list(packages = [], list_name)
       return if packages.nil? || packages.empty?
-      file = File.open("/home/vagrant/container/#{list_name}", "w")
+      Dir.mkdir(ROOT + '/container') if not Dir.exists?(ROOT + '/container')
+      file = File.open(ROOT + "/container/#{list_name}", "w")
       packages.each{ |p| file.puts p }
       file.close
     end

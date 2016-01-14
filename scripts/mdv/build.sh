@@ -33,14 +33,14 @@ script_path=`pwd`
 
 # Container path:
 # - /home/vagrant/container
-container_path=/home/vagrant/container
+container_path=$script_path/../container
 
 # /home/vagrant/share_folder contains:
 # - http://abf.rosalinux.ru/downloads/rosa2012.1/repository
 # - http://abf.rosalinux.ru/downloads/akirilenko_personal/repository/rosa2012.1
-platform_path=/home/vagrant/share_folder
+platform_path=/platforms/$save_to_platform
 
-repository_path=$platform_path/$save_to_platform/repository
+repository_path=$platform_path/repository
 
 # See: https://abf.rosalinux.ru/abf/abf-ideas/issues/51
 # Move debug packages to special separate repository

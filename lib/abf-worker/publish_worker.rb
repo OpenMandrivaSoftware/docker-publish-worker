@@ -8,16 +8,7 @@ module AbfWorker
     attr_accessor :runner
 
     def self.perform(options)
-      begin
-        self.new(options).perform
-      rescue => e
-        puts e.backtrace
-        puts e.message
-      end
-    end
-
-    def logger
-      @logger || init_logger("abfworker::publish-#{@extra['create_container'] ? 'container-' : ''}worker-#{@build_id}")
+      self.new(options).perform
     end
 
     protected
@@ -28,7 +19,6 @@ module AbfWorker
       @build_list_ids       = options['build_list_ids']
       @projects_for_cleanup = options['projects_for_cleanup']
       super options
-      logger.log "Starting publish..."
       @runner = AbfWorker::Runners::PublishBuildListContainer.new(self, options)
       initialize_live_inspector(options['time_living'])
     end
