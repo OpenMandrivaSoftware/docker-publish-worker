@@ -6,6 +6,7 @@ released="$RELEASED"
 rep_name="$REPOSITORY_NAME"
 use_file_store="$USE_FILE_STORE"
 testing="$TESTING"
+save_to_platform=$SAVE_TO_PLATFORM
 
 echo "TESTING = $testing"
 echo "RELEASED = $released"
@@ -13,9 +14,9 @@ echo "REPOSITORY_NAME = $rep_name"
 
 # Container path:
 # - /home/vagrant/container
-container_path=/home/vagrant/container
 script_path=`pwd`
-repository_path=/home/vagrant/share_folder
+container_path=script_path/../container/
+repository_path=/platforms/$save_to_platform/repository/
 
 # See: https://abf.rosalinux.ru/abf/abf-ideas/issues/51
 # Move debug packages to special separate repository
