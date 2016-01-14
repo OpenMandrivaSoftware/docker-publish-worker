@@ -32,7 +32,6 @@ module AbfWorker
     def perform
       @runner.run_script
       send_results
-      cleanup
     end
 
     protected

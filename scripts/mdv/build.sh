@@ -33,7 +33,7 @@ script_path=`pwd`
 
 # Container path:
 # - /home/vagrant/container
-container_path=$script_path/../container
+container_path=$script_path/../../container
 
 # /home/vagrant/share_folder contains:
 # - http://abf.rosalinux.ru/downloads/rosa2012.1/repository
