@@ -44,8 +44,10 @@ module AbfWorker::Runners
       command << (rollback_activity ? @rollback_script : @main_script)
       exit_status = nil
       process = IO.popen(command.join(' '), "r") do |io|
-        Process.wait(io.pid)
-        puts io.read
+        loop do
+          break if io.eof
+          puts io.gets
+        end
         exit_status = $?.exitstatus
       end
       @worker.status = exit_status == 0 ? AbfWorker::BaseWorker::BUILD_COMPLETED : AbfWorker::BaseWorker::BUILD_FAILED
