@@ -48,6 +48,7 @@ module AbfWorker::Runners
           break if io.eof
           puts io.gets
         end
+	Process.wait(io.pid)
         exit_status = $?.exitstatus
       end
       @worker.status = exit_status == 0 ? AbfWorker::BaseWorker::BUILD_COMPLETED : AbfWorker::BaseWorker::BUILD_FAILED
