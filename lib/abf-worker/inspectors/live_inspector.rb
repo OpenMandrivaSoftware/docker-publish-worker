@@ -25,24 +25,17 @@ module AbfWorker::Inspectors
     private
 
     def kill_now?
-      if @kill_at < Time.now
-        puts 'Time expired, VM will be stopped...'
-        return true
-      end
-      if status == 'USR1'
-        puts 'Received signal to stop VM...'
-        true
-      else
-        false
-      end
+      @kill_at < Time.now
     end
 
     def stop_build
       @worker.status = AbfWorker::BaseWorker::BUILD_CANCELED
       runner = @worker.runner
-      runner.can_run = false
-      runner.script_runner.kill if runner.script_runner
-      runner.rollback if runner.respond_to?(:rollback)
+      script_pid = runner.script_pid
+      if script_pid
+        Process.kill(:TERM, script_pid)
+        runner.rollback if runner.respond_to?(:rollback)
+      end
     end
 
   end

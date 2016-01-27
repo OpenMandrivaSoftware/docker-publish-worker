@@ -26,7 +26,7 @@ module AbfWorker
     def send_results
       options = { projects_for_cleanup: @projects_for_cleanup }
       options.merge!({
-        results:        [],
+        results:        upload_results_to_file_store,
         build_list_ids: @build_list_ids
       }) unless @skip_feedback
       update_build_status_on_abf(options, true)

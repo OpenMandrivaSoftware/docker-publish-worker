@@ -13,7 +13,6 @@ module AbfWorker
     attr_accessor :status,
                   :build_id,
                   :worker_id,
-                  :tmp_dir,
                   :live_inspector,
                   :shutdown
 
@@ -41,11 +40,58 @@ module AbfWorker
       @live_inspector.run
     end
 
+    def file_store_token
+      @file_store_token ||= APP_CONFIG['file_store']['token']
+    end
+
+    def upload_file_to_file_store(path, file_name)
+      path_to_file = path + '/' + file_name
+      return unless File.file?(path_to_file)
+
+      # Compress the log when file size more than 10MB
+      file_size = (File.size(path_to_file).to_f / TWO_IN_THE_TWENTIETH).round(2)
+      if file_name =~ /.log$/ && file_size >= 10
+        system "tar -zcvf #{path_to_file}.tar.gz #{path_to_file}"
+        File.delete path_to_file
+        path_to_file << '.tar.gz'
+        file_name << '.tar.gz'
+      end
+
+      sha1 = Digest::SHA1.file(path_to_file).hexdigest
+
+      # curl --user myuser@gmail.com:mypass -POST -F "file_store[file]=@files/archive.zip" http://file-store.rosalinux.ru/api/v1/file_stores.json
+      if %x[ curl #{APP_CONFIG['file_store']['url']}.json?hash=#{sha1} ] == '[]'
+        command = 'curl --user '
+        command << file_store_token
+        command << ': -POST -F "file_store[file]=@'
+        command << path_to_file
+        command << '" '
+        command << APP_CONFIG['file_store']['create_url']
+        command << ' --connect-timeout 5 --retry 5'
+        %x[ #{command} ]
+      end
+
+      # File.delete path_to_file
+      system "sudo rm -rf #{path_to_file}"
+      {:sha1 => sha1, :file_name => file_name, :size => file_size}
+    end
+
+    def upload_results_to_file_store
+      uploaded = []
+      results_folder = APP_CONFIG["output_folder"]
+      if File.exists?(results_folder) && File.directory?(results_folder)
+        Dir.new(results_folder).entries.each do |f|
+          uploaded << upload_file_to_file_store(results_folder, f)
+        end
+      end
+      uploaded.compact
+    end
+
     def update_build_status_on_abf(args = {}, force = false)
       if !@skip_feedback || force
         worker_args = [{
           id:     @build_id,
-          status: (@status == VM_ERROR ? BUILD_FAILED : @status),
+          status: @status,
           extra:  @extra
         }.merge(args)]
 

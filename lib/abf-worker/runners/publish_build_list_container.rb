@@ -1,14 +1,9 @@
-require 'forwardable'
 require 'abf-worker/models/repository'
 
 module AbfWorker::Runners
   class PublishBuildListContainer
-    extend Forwardable
 
-    attr_accessor :script_runner,
-                  :can_run
-
-    def_delegators :@worker, :logger
+    attr_accessor :script_pid
 
     def initialize(worker, options)
       @worker       = worker
@@ -19,42 +14,41 @@ module AbfWorker::Runners
       @repository   = options['repository']
       @packages     = options['packages'] || {}
       @old_packages = options['old_packages'] || {}
-      @can_run      = true
-    end
-
-    def run_script
-      @script_runner = Thread.new{ run_build_script }
-      @script_runner.join if @can_run
     end
 
     def rollback
       if @rollback_script
-        run_build_script true
+        run_script true
       end
     end
 
-    private
-
-    def run_build_script(rollback_activity = false)
+    def run_script(rollback_activity = false)
       init_packages_lists
       init_gpg_keys unless rollback_activity
       puts "Run #{rollback_activity ? 'rollback activity ' : ''}script..."
 
       command = base_command_for_run
-      command << (rollback_activity ? @rollback_script : @main_script)
-      exit_status = nil
-      process = IO.popen(command.join(' '), "r") do |io|
-        loop do
-          break if io.eof
-          puts io.gets
-        end
-	Process.wait(io.pid)
+      script_name = rollback_activity ? @rollback_script : @main_script
+      command << script_name
+      output_folder = APP_CONFIG['output_folder']
+      Dir.mkdir(output_folder) if not Dir.exists?(output_folder)
+      if @worker.status != AbfWorker::BaseWorker::BUILD_CANCELED
+        exit_status = nil
+        @script_pid = Process.spawn(command.join(' '), [:out,:err]=>[output_folder + "/publish_" + script_name + ".log", "w"])
+        Process.wait(@script_pid)
         exit_status = $?.exitstatus
+        if @worker.status != AbfWorker::BaseWorker::BUILD_CANCELED
+          if exit_status.nil? or exit_status != 0
+            @worker.status = AbfWorker::BaseWorker::BUILD_FAILED
+            rollback
+          else
+            @worker.status = AbfWorker::BaseWorker::BUILD_COMPLETED
+          end
+        end
       end
-      @worker.status = exit_status == 0 ? AbfWorker::BaseWorker::BUILD_COMPLETED : AbfWorker::BaseWorker::BUILD_FAILED
-      # No logs on publishing build_list
-      # save_results 
     end
+
+    private
 
     def base_command_for_run
       [

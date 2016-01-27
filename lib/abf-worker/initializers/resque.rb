@@ -1,7 +1,6 @@
 require 'redis'
 require 'resque'
 
-env = ENV['ENV'] || 'development'
 redis_host = ENV['REDIS_HOST']
 redis_port = ENV['REDIS_PORT']
 redis_password = ENV['REDIS_PASSWORD'].nil? ? '' : ENV['REDIS_PASSWORD']

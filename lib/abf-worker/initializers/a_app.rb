@@ -1,8 +1,7 @@
 require 'config_for'
 
-env = ENV['ENV'] || 'development'
+Thread.abort_on_exception = true
 
 ROOT = File.dirname(__FILE__) + '/../../../'
 
-APP_CONFIG = ConfigFor.load_config!("#{ROOT}/config", 'application', env)
-APP_CONFIG['env'] = env
+APP_CONFIG = ConfigFor.load_config!("#{ROOT}/config", 'application', 'common')
