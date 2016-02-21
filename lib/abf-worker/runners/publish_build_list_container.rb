@@ -62,6 +62,7 @@ module AbfWorker::Runners
     def init_packages_lists
       puts 'Initialize lists of new and old packages...'
 
+      system 'rm -rf ' + ROOT + '/container/*'
       [@packages, @old_packages].each_with_index do |packages, index|
         prefix = index == 0 ? 'new' : 'old'
         add_packages_to_list packages['sources'], "#{prefix}.SRPMS.list"
