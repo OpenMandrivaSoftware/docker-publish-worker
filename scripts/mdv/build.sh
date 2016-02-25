@@ -3,7 +3,7 @@
 echo '--> mdv-scripts/publish-packages: build.sh'
 
 # set script debug
-debug_output=1
+debug_output=0
 
 # Update genhdlist2
 sudo urpmi.update -a
@@ -38,9 +38,15 @@ container_path=$script_path/../../container
 # /home/vagrant/share_folder contains:
 # - http://abf.rosalinux.ru/downloads/rosa2012.1/repository
 # - http://abf.rosalinux.ru/downloads/akirilenko_personal/repository/rosa2012.1
-platform_path=/platforms/$save_to_platform
 
-repository_path=$platform_path/repository
+
+if [ "$is_container" == 'true' ]; then
+  platform_path=/platforms/${save_to_platform}/container/${id}
+  repository_path=$platform_path
+else
+  platform_path=/platforms/$save_to_platform
+  repository_path=$platform_path/repository
+fi
 
 # See: https://abf.rosalinux.ru/abf/abf-ideas/issues/51
 # Move debug packages to special separate repository
