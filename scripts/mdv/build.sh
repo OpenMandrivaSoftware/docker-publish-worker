@@ -3,7 +3,7 @@
 echo '--> mdv-scripts/publish-packages: build.sh'
 
 # set script debug
-debug_output=0
+debug_output=1
 
 # Update genhdlist2
 sudo urpmi.update -a
