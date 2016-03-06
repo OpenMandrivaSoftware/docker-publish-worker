@@ -2,7 +2,7 @@
 
 echo '--> mdv-scripts/publish-packages: init_rpmmacros.sh'
 
-gnupg_path=/home/vagrant/.gnupg
+gnupg_path=/home/root/.gnupg
 
 gpg --list-keys
 cp -f $gnupg_path/* /root/.gnupg/

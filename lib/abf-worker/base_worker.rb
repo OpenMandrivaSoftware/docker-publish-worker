@@ -102,6 +102,5 @@ module AbfWorker
         )
       end
     end
-      
   end
 end

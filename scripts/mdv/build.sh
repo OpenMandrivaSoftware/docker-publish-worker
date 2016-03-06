@@ -70,7 +70,7 @@ if [ "$use_debug_repo" == 'true' ] ; then
 fi
 
 sign_rpm=0
-gnupg_path=/home/vagrant/.gnupg
+gnupg_path=/home/root/.gnupg
 keyname=''
 if [ "$testing" != 'true' ] ; then
 
@@ -81,7 +81,7 @@ if [ "$testing" != 'true' ] ; then
 # (tpg) disable rpm signing for cooker as it is broken
     if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
 	sign_rpm=0
-	echo "--> Rpm signing disabled on cooker by TPG"
+	echo "--> RPM signing disabled on cooker by TPG"
     else
 	sign_rpm=1
     fi
