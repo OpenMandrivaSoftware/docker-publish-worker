@@ -7,7 +7,7 @@ module AbfWorker::Runners
 
     def initialize(worker, options)
       @worker       = worker
-      @cmd_params       = options['cmd_params']
+      @cmd_params       = options['cmd_params'] + " PLATFORM_PATH=" + options['platform']['path']
       @platform_type    = options['platform']['type']
       @main_script      = options['main_script']
       @rollback_script  = options['rollback_script']
