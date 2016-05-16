@@ -41,6 +41,11 @@ container_path=$script_path/../../container
 
 repository_path=$PLATFORM_PATH
 
+if [ $save_to_platform == $build_for_platform ]
+then
+	repository_path=${repository_path}/repository
+fi
+
 #if [ "$is_container" == 'true' ]; then
 #  platform_path=/platforms/${save_to_platform}/container/${id}
 #  repository_path=$platform_path
