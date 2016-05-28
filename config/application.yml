@@ -1,11 +1,6 @@
 common: &common
-  # our public key
-  abf_url: 'http://172.17.0.1/'
   file_store:
     url: 'http://file-store.openmandriva.org/api/v1/file_stores'
     create_url: 'http://file-store.openmandriva.org/api/v1/upload'
     token: <%= ENV["BUILD_TOKEN"] %>
   output_folder: <%= ENV['HOME'] + '/output' %>
-  abf_api:
-    url: <%= ENV['BUILD_URL'] %>
-    token: <%= ENV['BUILD_TOKEN'] %>
