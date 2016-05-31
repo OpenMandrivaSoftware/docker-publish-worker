@@ -88,7 +88,7 @@ if [ "$testing" != 'true' ] ; then
     fi
     /bin/bash $script_path/init_rpmmacros.sh
 
-    if [[ "$save_to_platform" =~ ^.*openmandriva.*$ ]] || [[ "$save_to_platform" =~ ^.*cooker.*$ ]] || [[ "$save_to_platform" =~ ^.*lx3.*$ ]]; then
+    if [[ "$save_to_platform" =~ ^.*openmandriva.*$ ]] || [[ "$save_to_platform" =~ ^.*cooker.*$ ]] || [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
       echo "--> Importing OpenMandriva GPG key from external keyserver"
       GNUPGHOME="$gnupg_path" gpg --homedir $gnupg_path --keyserver $key_server --recv-keys $OMV_key
     # else
@@ -169,7 +169,7 @@ function build_repo {
     #/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --xml-info \
     #  --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist "$path"
 
-    if [[ "$save_to_platform" =~ ^.*cooker.*$ ]] || [[ "$save_to_platform" =~ ^.*lx3.*$ ]] ; then
+    if [[ "$save_to_platform" =~ ^.*cooker.*$ ]] || [[ "$save_to_platform" =~ ^.*3.0.*$ ]] ; then
 	echo "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
 	XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}
 	rc=$?
