@@ -64,7 +64,6 @@ module AbfWorker
     def base_command_for_run
       [
         'cd ' + ROOT + '/scripts/' + @platform_type + ';',
-        'sudo ',
         @cmd_params,
         ' /bin/bash '
       ]

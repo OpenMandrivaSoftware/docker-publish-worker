@@ -40,11 +40,11 @@ for arch in $arches ; do
 
     # Add special repository that contains special packages
     echo "Add the special repository..."
-    sudo urpmi.addmedia data_repo "http://abf-downloads.abf.io/sc_personal/repository/$BUILD_FOR_PLATFORM/$arch/main/release/"
+    urpmi.addmedia data_repo "http://abf-downloads.abf.io/sc_personal/repository/$BUILD_FOR_PLATFORM/$arch/main/release/"
 
     # Install special packages
     echo "Install the special package: $data_package..."
-    sudo urpmi --auto --downloader wget --wget-options --auth-no-challenge --no-suggests --no-verify-rpm --ignorearch --fastunsafe "$data_package"
+    urpmi --auto --downloader wget --wget-options --auth-no-challenge --no-suggests --no-verify-rpm --ignorearch --fastunsafe "$data_package"
 
     # Move result to destination repository
     for f in $result_files; do
@@ -79,11 +79,11 @@ for arch in $arches ; do
 
     # Remove special packages
     echo "Remove the special package: $data_package..."
-    sudo urpme --auto "$data_package"
+    urpme --auto "$data_package"
 
     # Remove special repository
     echo "Remove the special repository..."
-    sudo urpmi.removemedia data_repo
+    urpmi.removemedia data_repo
 
     echo "--> [`LANG=en_US.UTF-8  date -u`] Done."
 done

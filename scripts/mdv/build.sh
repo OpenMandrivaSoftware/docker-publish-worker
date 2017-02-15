@@ -6,8 +6,8 @@ echo '--> mdv-scripts/publish-packages: build.sh'
 debug_output=0
 
 # Update genhdlist2
-sudo urpmi.update -a
-sudo urpmi --auto --downloader wget --wget-options --auth-no-challenge --no-suggests --no-verify-rpm --fastunsafe --auto genhdlist2 perl-URPM
+urpmi.update -a
+urpmi --auto --downloader wget --wget-options --auth-no-challenge --no-suggests --no-verify-rpm --fastunsafe --auto genhdlist2 perl-URPM
 
 released="$RELEASED"
 rep_name="$REPOSITORY_NAME"

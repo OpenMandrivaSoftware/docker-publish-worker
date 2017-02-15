@@ -33,8 +33,8 @@ if [ "$testing" == 'true' ] ; then
 fi
 
 # Update genhdlist2
-sudo urpmi.update -a
-sudo urpmi --downloader wget --wget-options --auth-no-challenge --auto --no-suggests --no-verify-rpm --fastunsafe genhdlist2
+urpmi.update -a
+urpmi --downloader wget --wget-options --auth-no-challenge --auto --no-suggests --no-verify-rpm --fastunsafe genhdlist2
 
 arches="SRPMS i586 x86_64 armv7hl aarch64"
 for arch in $arches ; do
