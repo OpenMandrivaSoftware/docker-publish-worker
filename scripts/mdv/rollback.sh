@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo '--> mdv-scripts/publish-packages: rollback.sh'
+printf '%s\n' '--> mdv-scripts/publish-packages: rollback.sh'
 
 released="$RELEASED"
 rep_name="$REPOSITORY_NAME"
@@ -14,7 +14,7 @@ echo "REPOSITORY_NAME = $rep_name"
 
 # Container path:
 # - /home/vagrant/container
-script_path=`pwd`
+script_path="$(pwd)"
 container_path=script_path/../container/
 repository_path=/platforms/$save_to_platform/repository/
 
