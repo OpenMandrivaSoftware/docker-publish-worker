@@ -61,10 +61,36 @@ function build_repo {
 
     cd "${script_path}"/
     if [ "$regenerate_metadata" != 'true' ] ; then
-	createrepo_c --verbose --update --no-database --workers=10 --simple-md-filenames --general-compress-type=xz "${path}"
+# genhdlist2 in rosa/omv supports "--merge" option that can be used to speed up publication process.
+# See: https://abf.io/abf/abf-ideas/issues/149
+	rm -f ${path}/media_info/{new,old}-metadata.lst
+	[[ -f ${container_path}/new.${arch}.list.downloaded ]] && cp -f ${container_path}/new.${arch}.list.downloaded ${path}/media_info/new-metadata.lst
+	[[ -f ${container_path}/old.${arch}.list ]] && cp -f ${container_path}/old.${arch}.list ${path}/media_info/old-metadata.lst
+
+	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
+	    createrepo_c --update --no-database --workers=10 --general-compress-type=xz "${path}"
+	    rc=$?
+	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
+	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
+	    XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}
+	    rc=$?
+	else
+	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist --merge --no-bad-rpm ${path}"
+	    XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist --merge --no-bad-rpm ${path}
+	    rc=$?
+	fi
+	rm -f ${path}/media_info/{new,old}-metadata.lst
     else
-	createrepo_c --verbose --no-database --workers=10 --simple-md-filenames --general-compress-type=xz "${path}"
+	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
+	    createrepo_c --verbose --no-database --workers=10 --general-compress-type=xz "${path}"
+	    rc=$?
+	else
+	    printf '%s\n' "/usr/bin/genhdlist2 -v --clean --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist $path"
+	    /usr/bin/genhdlist2 -v --clean --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist ${path}
+	fi
+	rc=$?
     fi
+
     rc=$?
     printf '%s\n' "${rc}" > "${container_path}"/"${arch}".exit-code
     printf '%s\n' "--> [$LANG=en_US.UTF-8  date -u)] Done."
@@ -153,7 +179,7 @@ for arch in $arches ; do
 	    if [ "$fullname" != '' ]; then
 		curl -O -L "${file_store_url}"/"${sha1}"
 		mv $sha1 $fullname
-		echo $fullname >> "$new_packages.downloaded"
+		printf '%s\n' $fullname >> "$new_packages.downloaded"
 		chown root:root $fullname
 		chmod 0644 $fullname
 	    else
@@ -175,7 +201,7 @@ for arch in $arches ; do
 		mv $package $rpm_backup/
 	    fi
 
-	    if [ "$use_debug_repo" == 'true' ] ; then
+	    if [ "$use_debug_repo" = 'true' ]; then
 		debug_package=$debug_main_folder/$status/$fullname
 		if [ -f "$debug_package" ]; then
 		    printf '%s\n' "mv $debug_package $debug_rpm_backup/"
@@ -186,7 +212,6 @@ for arch in $arches ; do
 	update_repo=1
     fi
     printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Done."
-
     printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Starting to move packages to the target repository."
 # some debug output
     if [ "$debug_output" = "1" ]; then
@@ -198,7 +223,7 @@ for arch in $arches ; do
     fi
 # Move packages into repository
     if [ -f "$new_packages" ]; then
-	if [ "$use_debug_repo" == 'true' ] ; then
+	if [ "$use_debug_repo" = 'true' ]; then
 	    for file in $( ls -1 $rpm_new/ | grep .rpm$ ) ; do
 		rpm_name=$(rpm -qp --queryformat %{NAME} $rpm_new/$file)
 		if [[ "$rpm_name" =~ debuginfo ]] ; then
@@ -266,7 +291,7 @@ else
 	m_info_backup="$main_folder/$status-media_info-backup"
 	rm -rf $rpm_backup $rpm_new $m_info_backup
 
-	if [ "$use_debug_repo" == 'true' ] ; then
+	if [ "$use_debug_repo" = 'true' ] ; then
 	    debug_main_folder=$repository_path/$arch/debug_$rep_name
 	    debug_rpm_backup="$debug_main_folder/$status-rpm-backup"
 	    debug_rpm_new="$debug_main_folder/$status-rpm-new"
@@ -275,8 +300,8 @@ else
 	fi
 
 # Unlocks repository for sync
-	rm -f $main_folder/.publish.lock
+	rm -f "${main_folder}"/.publish.lock
     done
 fi
 
-exit $rc
+exit "${rc}"
