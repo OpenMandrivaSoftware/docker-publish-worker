@@ -68,7 +68,7 @@ function build_repo {
 	[[ -f ${container_path}/old.${arch}.list ]] && cp -f ${container_path}/old.${arch}.list ${path}/media_info/old-metadata.lst
 
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
-	    createrepo_c --update --no-database --workers=10 --general-compress-type=xz "${path}"
+	    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
 	    rc=$?
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
 	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
@@ -82,7 +82,7 @@ function build_repo {
 	rm -f ${path}/media_info/{new,old}-metadata.lst
     else
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
-	    createrepo_c --verbose --no-database --workers=10 --general-compress-type=xz "${path}"
+	    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}" regenerate
 	    rc=$?
 	else
 	    printf '%s\n' "/usr/bin/genhdlist2 -v --clean --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist $path"
