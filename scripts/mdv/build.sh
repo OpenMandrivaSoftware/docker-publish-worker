@@ -57,7 +57,7 @@ function build_repo {
     regenerate_metadata=$3
 
 # Build repo
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Generating repository..."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Generating repository..."
 
     cd "${script_path}"/
     if [ "$regenerate_metadata" != 'true' ] ; then
@@ -93,7 +93,7 @@ function build_repo {
 
     rc=$?
     printf '%s\n' "${rc}" > "${container_path}"/"${arch}".exit-code
-    printf '%s\n' "--> [$LANG=en_US.UTF-8  date -u)] Done."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
     cd -
 }
 
@@ -118,7 +118,7 @@ if [ "${rep_locked}" != 0 ] ; then
     for arch in $arches ; do
 	rm -f "${repository_path}"/"${arch}"/"${rep_name}"/.publish.lock
     done
-    printf '%s\n' "--> ["$(LANG=en_US.UTF-8  date -u)"] ERROR: Mirror is currently synchronising the repository state."
+    printf '%s\n' "--> ["LANG=en_US.UTF-8  $(date -u)"] ERROR: Mirror is currently synchronising the repository state."
     exit 1
 fi
 
@@ -144,7 +144,7 @@ if [ "${all_packages_exist}" != 0 ]; then
     for arch in $arches ; do
 	rm -f "${repository_path}"/"${arch}"/"${rep_name}"/.publish.lock
     done
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] ERROR: some packages does not exist"
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] ERROR: some packages does not exist"
     exit 1
 fi
 
@@ -170,7 +170,7 @@ for arch in $arches ; do
     fi
 
 # Downloads new packages
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Downloading new packages..."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Downloading new packages..."
     new_packages="$container_path/new.$arch.list"
     if [ -f "$new_packages" ]; then
 	cd $rpm_new
@@ -188,10 +188,10 @@ for arch in $arches ; do
 	done
 	update_repo=1
     fi
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Done."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
 
 # Creates backup
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Creating backup..."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Creating backup..."
     old_packages="$container_path/old.$arch.list"
     if [ -f "$old_packages" ]; then
 	for fullname in $(cat $old_packages) ; do
@@ -211,8 +211,8 @@ for arch in $arches ; do
 	done
 	update_repo=1
     fi
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Done."
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Starting to move packages to the target repository."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Starting to move packages to the target repository."
 # some debug output
     if [ "$debug_output" = "1" ]; then
 	echo $main_folder
@@ -237,7 +237,7 @@ for arch in $arches ; do
 	fi
     fi
 
-    printf '%s\n' "--> [$(LANG=en_US.UTF-8  date -u)] Done."
+    printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
     cd "${main_folder}"
     rm -rf "${rpm_new}"
 
