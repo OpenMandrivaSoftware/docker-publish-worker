@@ -67,7 +67,7 @@ if [ "$testing" != 'true' ]; then
     	fi
 fi
 
-build_repo {
+build_repo() {
     path=$1
     arch=$2
     regenerate_metadata=$3
