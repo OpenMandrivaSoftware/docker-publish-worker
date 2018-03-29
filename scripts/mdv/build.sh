@@ -123,16 +123,19 @@ fi
 	    try_rebuild=true
 	    retry=0
 	    while $try_rebuild; do
-		if [ $(/usr/bin/docker ps -q --filter=ancestor=openmandriva/publisher:latest) = '' ]; then
+		if [ $(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest) = '' ]; then
 		    try_rebuild=false
 		    [ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
 		    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
 		    rc=$?
-		elif [ "${retry}" -lt "${MAX_RETRIES}" ]; then
+		    try_rebuild=false
+		elif [ "${rc}" != 0 ] && [ "${retry}" -lt "${MAX_RETRIES}" ]; then
 		    try_rebuild=true
 		    (( retry=$retry+1 ))
 		    printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
 		    sleep "${WAIT_TIME}"
+		else
+		    try_rebuild=false
 		fi
 	    done
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
