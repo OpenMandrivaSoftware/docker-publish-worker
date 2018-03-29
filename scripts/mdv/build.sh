@@ -62,6 +62,8 @@ if [ "$testing" != 'true' ]; then
     		KEYNAME="$(gpg --list-public-keys --homedir /root/.gnupg |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
     		printf '%s\n' "--> keyname: $KEYNAME"
 		sign_rpm=1
+		SECRET="$gnupg_path"/secret
+		[ ! -e "${SECRET}" ] && printf '%s\n' "Your secret file does not exist. RPM signing disabled." && sign_rpm=0
     	fi
 fi
 
