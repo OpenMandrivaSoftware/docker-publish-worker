@@ -68,9 +68,24 @@ function build_repo {
 	[[ -f ${container_path}/old.${arch}.list ]] && cp -f ${container_path}/old.${arch}.list ${path}/media_info/old-metadata.lst
 
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
-	    [ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
-	    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
-	    rc=$?
+	    MAX_RETRIES=10
+	    WAIT_TIME=60
+	    try_rebuild=true
+	    retry=0
+	    while $try_rebuild; do
+		    if [ $(/usr/bin/docker ps -q --filter=ancestor=openmandriva/publisher:latest) = '' ]; then
+			try_rebuild=false
+			[ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
+			/usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
+			rc=$?
+		    elif [ "${retry}" -lt "${MAX_RETRIES}" ]; then
+			try_rebuild=true
+			(( retry=$retry+1 ))
+			printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
+			sleep "${WAIT_TIME}"
+		    fi
+	    done
+	    fi
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
 	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
 	    XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}
