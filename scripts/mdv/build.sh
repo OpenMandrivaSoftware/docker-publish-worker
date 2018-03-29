@@ -219,7 +219,7 @@ for arch in $arches ; do
     rpm_backup="$main_folder/$status-rpm-backup"
     rpm_new="$main_folder/$status-rpm-new"
     m_info_backup="$main_folder/$status-media_info-backup"
-    rm -rf $rpm_backup $rpm_new $m_info_backup
+    rm -rf "$rpm_backup" "$rpm_new" "$m_info_backup"
     mkdir -p "$rpm_backup"
     mkdir -p "$rpm_new"
     cp -rf $main_folder/$status/media_info "$m_info_backup"
@@ -229,10 +229,10 @@ for arch in $arches ; do
 	debug_rpm_backup="$debug_main_folder/$status-rpm-backup"
 	debug_rpm_new="$debug_main_folder/$status-rpm-new"
 	debug_m_info_backup="$debug_main_folder/$status-media_info-backup"
-	rm -rf $debug_rpm_backup $debug_rpm_new $debug_m_info_backup
-	mkdir -p $debug_rpm_backup
-	mkdir -p $debug_rpm_new
-	cp -rf $debug_main_folder/$status/media_info $debug_m_info_backup
+	rm -rf "$debug_rpm_backup" "$debug_rpm_new" "$debug_m_info_backup"
+	mkdir -p "$debug_rpm_backup"
+	mkdir -p "$debug_rpm_new"
+	cp -rf "$debug_main_folder"/"$status"/media_info "$debug_m_info_backup"
     fi
 
 # Downloads new packages
