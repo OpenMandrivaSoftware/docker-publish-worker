@@ -60,6 +60,7 @@ if [ "$testing" != 'true' ]; then
 	    printf '%s\n' "--> $gnupg_path does not exist, signing rpms will be not possible"
 	    sign_rpm=0
 	else
+	    chmod 700 "$gnupg_path"
 	    KEYNAME="$(gpg --list-public-keys --homedir $gnupg_path |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
 	    printf '%s\n' "--> Key used to sign RPM files: $KEYNAME"
 	    sign_rpm=1
