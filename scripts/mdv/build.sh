@@ -52,14 +52,15 @@ if [ "$use_debug_repo" = 'true' ]; then
 fi
 
 sign_rpm=0
-gnupg_path=/home/root/.gnupg
+gnupg_path=/root/.gnupg
 KEYNAME=''
+
 if [ "$testing" != 'true' ]; then
 	if [ ! -d "$gnupg_path" ]; then
 		printf '%s\n' "--> $gnupg_path does not exist, signing rpms will be not possible"
 		sign_rpm=0
     	else
-    		KEYNAME="$(gpg --list-public-keys --homedir /root/.gnupg |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
+    		KEYNAME="$(gpg --list-public-keys --homedir $gnupg_path |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
     		printf '%s\n' "--> keyname: $KEYNAME"
 		sign_rpm=1
 		SECRET="$gnupg_path"/secret
@@ -160,7 +161,7 @@ fi
     printf '%s\n' "${rc}" > "${container_path}"/"${arch}".exit-code
     printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
     cd -
-}
+ }
 
 arches="SRPMS i586 i686 x86_64 armv7hl aarch64"
 
