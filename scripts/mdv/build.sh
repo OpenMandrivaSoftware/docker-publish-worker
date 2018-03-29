@@ -85,7 +85,6 @@ function build_repo {
 			sleep "${WAIT_TIME}"
 		    fi
 	    done
-	    fi
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
 	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
 	    XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}
