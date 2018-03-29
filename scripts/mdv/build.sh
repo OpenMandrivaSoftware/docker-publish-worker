@@ -59,19 +59,21 @@ if [ "$testing" != 'true' ]; then
 	if [ ! -d "$gnupg_path" ]; then
 	    printf '%s\n' "--> $gnupg_path does not exist, signing rpms will be not possible"
 	    sign_rpm=0
-	elif [ ! -d "$gnupg_path"/pubring.gpg ]; then
-	    printf '%s\n' "Your $gnupg_path/pubring.gpg file does not exist. RPM signing disabled."
-	    sign_rpm=0
 	else
 	    chmod 700 "$gnupg_path"
-	    gpg --import "$gnupg_path"/pubring.gpg
-	    sleep 1
-	    KEYNAME="$(gpg --list-public-keys --homedir $gnupg_path |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
-	    printf '%s\n' "--> Key used to sign RPM files: $KEYNAME"
-	    sign_rpm=1
-	    SECRET="$gnupg_path"/secret
-	    [ ! -e "${SECRET}" ] && printf '%s\n' "Your secret file does not exist. RPM signing disabled." && sign_rpm=0
-	    [ -z "$KEYNAME" ] && printf '%s\n' "GPG key does not exist. RPM signing disabled." && sign_rpm=0
+	    if [ -f "$gnupg_path"/pubring.gpg ]; then
+		gpg --import "$gnupg_path"/pubring.gpg
+		sleep 1
+		KEYNAME="$(gpg --list-public-keys --homedir $gnupg_path |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
+		printf '%s\n' "--> Key used to sign RPM files: $KEYNAME"
+		sign_rpm=1
+		SECRET="$gnupg_path"/secret
+		[ ! -e "${SECRET}" ] && printf '%s\n' "Your secret file does not exist. RPM signing disabled." && sign_rpm=0
+		[ -z "$KEYNAME" ] && printf '%s\n' "GPG is not imported. RPM signing disabled." && sign_rpm=0
+	    else
+		printf '%s\n' "Your $gnupg_path/pubring.gpg file does not exist. RPM signing is disabled."
+		sign_rpm=0
+	    fi
 	fi
 fi
 
