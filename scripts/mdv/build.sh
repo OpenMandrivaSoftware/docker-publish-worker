@@ -51,21 +51,69 @@ if [ "$use_debug_repo" = 'true' ]; then
     mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hl,aarch64}/debug_"${rep_name}"/"${status}"/media_info
 fi
 
-function build_repo {
+sign_rpm=0
+gnupg_path=/home/root/.gnupg
+KEYNAME=''
+if [ "$testing" != 'true' ]; then
+	if [ ! -d "$gnupg_path" ]; then
+		printf '%s\n' "--> $gnupg_path does not exist, signing rpms will be not possible"
+		sign_rpm=0
+    	else
+    		KEYNAME="$(gpg --list-public-keys --homedir /root/.gnupg |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
+    		printf '%s\n' "--> keyname: $KEYNAME"
+		sign_rpm=1
+    	fi
+fi
+
+build_repo {
     path=$1
     arch=$2
     regenerate_metadata=$3
+    start_sign_rpms=$4
+    KEYNAME=$5
+
+if [ "$regenerate_metadata" = 'true' ]; then
+	if [ "$start_sign_rpms" = '1' ]; then
+	    printf '%s\n' "--> Starting to sign rpms in $path"
+	    for i in $(find "$path" -name '*.rpm'); do
+		has_key="$(rpm -Kv "$i" | grep 'key ID' | grep -ow ${KEYNAME,,})"
+		if [ "$has_key" = '' ]; then
+		    chmod 0666 "$i"
+		     cat /dev/null | setsid rpm \
+	    		--define "_gpg_name '$KEYNAME'" \
+	    		--define "__gpg /usr/bin/gpg" \
+	    		--define "_signature gpg" \
+	    		--define "__gpg_check_password_cmd /bin/true" \
+	    		--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
+			--resign "$i" >/dev/null 2>&1;
+		    chmod 0644 "$i"
+		else
+		    printf '%s\n' "--> Package $i already signed"
+		fi
+
+	    done
+# Save exit code
+	    rc=$?
+	    if [ "${rc}" = '0' ]; then
+		printf '%s\n' "--> Packages in $path has been signed successfully."
+	    else
+		printf '%s\n' "--> Packages in $path has not been signed successfully!!!"
+	    fi
+	else
+	    printf '%s\n' "--> RPM signing is disabled"
+	fi
+fi
 
 # Build repo
     printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Generating repository..."
 
     cd "${script_path}"/
-    if [ "$regenerate_metadata" != 'true' ] ; then
+    if [ "$regenerate_metadata" != 'true' ]; then
 # genhdlist2 in rosa/omv supports "--merge" option that can be used to speed up publication process.
 # See: https://abf.io/abf/abf-ideas/issues/149
-	rm -f ${path}/media_info/{new,old}-metadata.lst
-	[[ -f ${container_path}/new.${arch}.list.downloaded ]] && cp -f ${container_path}/new.${arch}.list.downloaded ${path}/media_info/new-metadata.lst
-	[[ -f ${container_path}/old.${arch}.list ]] && cp -f ${container_path}/old.${arch}.list ${path}/media_info/old-metadata.lst
+	rm -f "${path}"/media_info/{new,old}-metadata.lst
+	[ -f "${container_path}"/new."${arch}".list.downloaded ] && cp -f "${container_path}"/new."${arch}".list.downloaded ${path}/media_info/new-metadata.lst
+	[ -f "${container_path}"/old."${arch}".list ] && cp -f "${container_path}"/old."${arch}".list "${path}"/media_info/old-metadata.lst
 
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
 	    MAX_RETRIES=10
@@ -94,7 +142,7 @@ function build_repo {
 	    XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist --merge --no-bad-rpm ${path}
 	    rc=$?
 	fi
-	rm -f ${path}/media_info/{new,old}-metadata.lst
+	rm -f "${path}"/media_info/{new,old}-metadata.lst
     else
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
 	    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}" regenerate
@@ -112,7 +160,6 @@ function build_repo {
     cd -
 }
 
-rx=0
 arches="SRPMS i586 i686 x86_64 armv7hl aarch64"
 
 # Checks sync status of repository
@@ -128,7 +175,7 @@ for arch in $arches ; do
 done
 
 # Fails publishing if mirror is currently synchronising the repository state
-if [ "${rep_locked}" != 0 ] ; then
+if [ "${rep_locked}" != 0 ]; then
 # Unlocks repository for sync
     for arch in $arches ; do
 	rm -f "${repository_path}"/"${arch}"/"${rep_name}"/.publish.lock
@@ -171,7 +218,8 @@ for arch in $arches ; do
     rpm_new="$main_folder/$status-rpm-new"
     m_info_backup="$main_folder/$status-media_info-backup"
     rm -rf $rpm_backup $rpm_new $m_info_backup
-    mkdir {$rpm_backup,$rpm_new}
+    mkdir -p "$rpm_backup"
+    mkdir -p "$rpm_new"
     cp -rf $main_folder/$status/media_info $m_info_backup
 
     if [ "$use_debug_repo" = 'true' ]; then
@@ -180,7 +228,8 @@ for arch in $arches ; do
 	debug_rpm_new="$debug_main_folder/$status-rpm-new"
 	debug_m_info_backup="$debug_main_folder/$status-media_info-backup"
 	rm -rf $debug_rpm_backup $debug_rpm_new $debug_m_info_backup
-	mkdir {$debug_rpm_backup,$debug_rpm_new}
+	mkdir -p $debug_rpm_backup
+	mkdir -p $debug_rpm_new
 	cp -rf $debug_main_folder/$status/media_info $debug_m_info_backup
     fi
 
@@ -193,10 +242,31 @@ for arch in $arches ; do
 	    fullname="$(sha1=$sha1 /bin/sh $script_path/extract_filename.sh)"
 	    if [ "$fullname" != '' ]; then
 		curl -O -L "${file_store_url}"/"${sha1}"
-		mv $sha1 $fullname
+		mv "$sha1" "$fullname"
 		printf '%s\n' $fullname >> "$new_packages.downloaded"
 		chown root:root $fullname
-		chmod 0644 $fullname
+# Add signature to RPM
+		if [ "$sign_rpm" != '0' ]; then
+		    chmod 0666 "$fullname"
+		    printf '%s\n' "--> Starting to sign rpm package"
+		    cat /dev/null | setsid rpm \
+	    		--define "_gpg_name '$KEYNAME'" \
+	    		--define "__gpg /usr/bin/gpg" \
+	    		--define "_signature gpg" \
+	    		--define "__gpg_check_password_cmd /bin/true" \
+	    		--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
+			--addsign "$i" >/dev/null 2>&1;
+# Save exit code
+		    rc=$?
+		    if [ "${rc}" = '0' ]; then
+			printf '%s\n' "--> Package $fullname has been signed successfully."
+		    else
+			printf '%s\n' "--> Package $fullname has not been signed successfully!!!"
+		    fi
+		else
+		    printf '%s\n' "--> RPM signing is disabled"
+		fi
+		chmod 0644 "$fullname"
 	    else
 		printf '%s\n' "--> Package with sha1 '$sha1' does not exist!!!"
 	    fi
@@ -230,7 +300,7 @@ for arch in $arches ; do
     printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Starting to move packages to the target repository."
 # some debug output
     if [ "$debug_output" = "1" ]; then
-	echo $main_folder
+	printf '%s\n' "$main_folder"
 	ls -l $main_folder/release
 	ls -l $main_folder/updates
 	printf '%s\n' $debug_main_folder
@@ -241,7 +311,7 @@ for arch in $arches ; do
 	if [ "$use_debug_repo" = 'true' ]; then
 	    for file in $( ls -1 $rpm_new/ | grep .rpm$ ) ; do
 		rpm_name=$(rpm -qp --queryformat %{NAME} $rpm_new/$file)
-		if [[ "$rpm_name" =~ debuginfo ]] ; then
+		if [[ "$rpm_name" =~ debuginfo ]]; then
 		    mv $rpm_new/$file $debug_main_folder/$status/
 		else
 		    mv $rpm_new/$file $main_folder/$status/
@@ -258,7 +328,7 @@ for arch in $arches ; do
 
     if [ $update_repo != 1 ]; then
 	if [ "$is_container" = 'true' ]; then
-	    rm -rf $repository_path/$arch
+	    rm -rf "$repository_path"/"$arch"
 	fi
 	if [ "$regenerate_metadata" != 'true' ]; then
 	    continue
@@ -266,7 +336,7 @@ for arch in $arches ; do
     fi
 
     printf '%s\n' "build_repo "${main_folder}/${status}" "${arch}" "${regenerate_metadata}""
-    build_repo "$main_folder/$status" "$arch" "$regenerate_metadata" "$sign_rpm" "$keyname" &
+    build_repo "$main_folder/$status" "$arch" "$regenerate_metadata" "$sign_rpm" "$KEYNAME" &
     if [ "$use_debug_repo" = 'true' ]; then
 	build_repo "${debug_main_folder}/${status}" "${arch}" "${regenerate_metadata}" &
     fi
@@ -306,7 +376,7 @@ else
 	m_info_backup="$main_folder/$status-media_info-backup"
 	rm -rf $rpm_backup $rpm_new $m_info_backup
 
-	if [ "$use_debug_repo" = 'true' ] ; then
+	if [ "$use_debug_repo" = 'true' ]; then
 	    debug_main_folder=$repository_path/$arch/debug_$rep_name
 	    debug_rpm_backup="$debug_main_folder/$status-rpm-backup"
 	    debug_rpm_new="$debug_main_folder/$status-rpm-new"
