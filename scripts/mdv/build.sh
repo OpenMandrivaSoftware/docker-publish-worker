@@ -38,11 +38,11 @@ use_debug_repo='true'
 # Checks 'released' status of platform
 status='release'
 if [ "$released" = 'true' ]; then
-  status='updates'
+    status='updates'
 fi
 if [ "$testing" = 'true' ]; then
-  status='testing'
-  use_debug_repo='false'
+    status='testing'
+    use_debug_repo='false'
 fi
 
 # Checks that 'repository' directory exist
@@ -57,15 +57,15 @@ KEYNAME=''
 
 if [ "$testing" != 'true' ]; then
 	if [ ! -d "$gnupg_path" ]; then
-		printf '%s\n' "--> $gnupg_path does not exist, signing rpms will be not possible"
-		sign_rpm=0
-    	else
-    		KEYNAME="$(gpg --list-public-keys --homedir $gnupg_path |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
-    		printf '%s\n' "--> keyname: $KEYNAME"
-		sign_rpm=1
-		SECRET="$gnupg_path"/secret
-		[ ! -e "${SECRET}" ] && printf '%s\n' "Your secret file does not exist. RPM signing disabled." && sign_rpm=0
-    	fi
+	    printf '%s\n' "--> $gnupg_path does not exist, signing rpms will be not possible"
+	    sign_rpm=0
+	else
+	    KEYNAME="$(gpg --list-public-keys --homedir $gnupg_path |sed -n 4p | awk '{ print $1 }' | awk '{print substr($0,length-7,9)}'| awk '{ sub(/.*\//, ""); print tolower($0) }')"
+	    printf '%s\n' "--> keyname: $KEYNAME"
+	    sign_rpm=1
+	    SECRET="$gnupg_path"/secret
+	    [ ! -e "${SECRET}" ] && printf '%s\n' "Your secret file does not exist. RPM signing disabled." && sign_rpm=0
+	fi
 fi
 
 build_repo() {
@@ -82,18 +82,17 @@ if [ "$regenerate_metadata" = 'true' ]; then
 		has_key="$(rpm -Kv "$i" | grep 'key ID' | grep -ow ${KEYNAME,,})"
 		if [ "$has_key" = '' ]; then
 		    chmod 0666 "$i"
-		     cat /dev/null | setsid rpm \
-	    		--define "_gpg_name '$KEYNAME'" \
-	    		--define "__gpg /usr/bin/gpg" \
-	    		--define "_signature gpg" \
-	    		--define "__gpg_check_password_cmd /bin/true" \
-	    		--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-			--resign "$i" >/dev/null 2>&1;
+		    cat /dev/null | setsid rpm \
+		    --define "_gpg_name '$KEYNAME'" \
+		    --define "__gpg /usr/bin/gpg" \
+		    --define "_signature gpg" \
+		    --define "__gpg_check_password_cmd /bin/true" \
+		    --define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
+		    --resign "$i" >/dev/null 2>&1;
 		    chmod 0644 "$i"
 		else
 		    printf '%s\n' "--> Package $i already signed"
 		fi
-
 	    done
 # Save exit code
 	    rc=$?
@@ -124,17 +123,17 @@ fi
 	    try_rebuild=true
 	    retry=0
 	    while $try_rebuild; do
-		    if [ $(/usr/bin/docker ps -q --filter=ancestor=openmandriva/publisher:latest) = '' ]; then
-			try_rebuild=false
-			[ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
-			/usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
-			rc=$?
-		    elif [ "${retry}" -lt "${MAX_RETRIES}" ]; then
-			try_rebuild=true
-			(( retry=$retry+1 ))
-			printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
-			sleep "${WAIT_TIME}"
-		    fi
+		if [ $(/usr/bin/docker ps -q --filter=ancestor=openmandriva/publisher:latest) = '' ]; then
+		    try_rebuild=false
+		    [ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
+		    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
+		    rc=$?
+		elif [ "${retry}" -lt "${MAX_RETRIES}" ]; then
+		    try_rebuild=true
+		    (( retry=$retry+1 ))
+		    printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
+		    sleep "${WAIT_TIME}"
+		fi
 	    done
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
 	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
@@ -161,7 +160,7 @@ fi
     printf '%s\n' "${rc}" > "${container_path}"/"${arch}".exit-code
     printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
     cd -
- }
+}
 
 arches="SRPMS i586 i686 x86_64 armv7hl aarch64"
 
@@ -193,7 +192,7 @@ all_packages_exist=0
 for arch in $arches ; do
     new_packages="${container_path}"/new."${arch}".list
     if [ -f "$new_packages" ]; then
-	for sha1 in $(cat "${new_packages}") ; do
+	for sha1 in $(cat "${new_packages}"); do
 	    r="$(curl ${file_store_url}?hash=${sha1})"
 	    if [ "$r" = '[]' ]; then
 		printf '%s\n' "--> Package with sha1 '$sha1' for $arch does not exist!!!"
@@ -216,14 +215,14 @@ fi
 file_store_url="${file_store_base}"/api/v1/file_stores
 for arch in $arches ; do
     update_repo=0
-    main_folder=$repository_path/$arch/$rep_name
+    main_folder="$repository_path"/"$arch"/"$rep_name"
     rpm_backup="$main_folder/$status-rpm-backup"
     rpm_new="$main_folder/$status-rpm-new"
     m_info_backup="$main_folder/$status-media_info-backup"
     rm -rf $rpm_backup $rpm_new $m_info_backup
     mkdir -p "$rpm_backup"
     mkdir -p "$rpm_new"
-    cp -rf $main_folder/$status/media_info $m_info_backup
+    cp -rf $main_folder/$status/media_info "$m_info_backup"
 
     if [ "$use_debug_repo" = 'true' ]; then
 	debug_main_folder=$repository_path/$arch/debug_$rep_name
@@ -253,12 +252,12 @@ for arch in $arches ; do
 		    chmod 0666 "$fullname"
 		    printf '%s\n' "--> Starting to sign rpm package"
 		    cat /dev/null | setsid rpm \
-	    		--define "_gpg_name '$KEYNAME'" \
-	    		--define "__gpg /usr/bin/gpg" \
-	    		--define "_signature gpg" \
-	    		--define "__gpg_check_password_cmd /bin/true" \
-	    		--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-			--addsign "$i" >/dev/null 2>&1;
+		    --define "_gpg_name '$KEYNAME'" \
+		    --define "__gpg /usr/bin/gpg" \
+		    --define "_signature gpg" \
+		    --define "__gpg_check_password_cmd /bin/true" \
+		    --define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
+		    --addsign "$i" >/dev/null 2>&1;
 # Save exit code
 		    rc=$?
 		    if [ "${rc}" = '0' ]; then
@@ -370,21 +369,21 @@ done
 # Check exit code after build and rollback
 if [ "${rc}" != 0 ]; then
     cd $script_path/
-    TESTING=$testing RELEASED=$released REPOSITORY_NAME=$rep_name USE_FILE_STORE=false /bin/bash $script_path/rollback.sh
+    TESTING=$testing RELEASED=$released REPOSITORY_NAME=$rep_name USE_FILE_STORE=false /bin/bash "$script_path"/rollback.sh
 else
     for arch in $arches ; do
 	main_folder=$repository_path/$arch/$rep_name
 	rpm_backup="$main_folder/$status-rpm-backup"
 	rpm_new="$main_folder/$status-rpm-new"
 	m_info_backup="$main_folder/$status-media_info-backup"
-	rm -rf $rpm_backup $rpm_new $m_info_backup
+	rm -rf "$rpm_backup" "$rpm_new" "$m_info_backup"
 
 	if [ "$use_debug_repo" = 'true' ]; then
 	    debug_main_folder=$repository_path/$arch/debug_$rep_name
 	    debug_rpm_backup="$debug_main_folder/$status-rpm-backup"
 	    debug_rpm_new="$debug_main_folder/$status-rpm-new"
 	    debug_m_info_backup="$debug_main_folder/$status-media_info-backup"
-	    rm -rf $debug_rpm_backup $debug_rpm_new $debug_m_info_backup
+	    rm -rf "$debug_rpm_backup" "$debug_rpm_new" "$debug_m_info_backup"
 	fi
 
 # Unlocks repository for sync
