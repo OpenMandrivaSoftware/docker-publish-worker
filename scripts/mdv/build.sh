@@ -68,6 +68,7 @@ function build_repo {
 	[[ -f ${container_path}/old.${arch}.list ]] && cp -f ${container_path}/old.${arch}.list ${path}/media_info/old-metadata.lst
 
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
+	    [ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
 	    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
 	    rc=$?
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
@@ -301,6 +302,7 @@ else
 
 # Unlocks repository for sync
 	rm -f "${main_folder}"/.publish.lock
+	[ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
     done
 fi
 
