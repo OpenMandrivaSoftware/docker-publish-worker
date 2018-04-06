@@ -228,9 +228,9 @@ file_store_url="${file_store_base}"/api/v1/file_stores
 for arch in $arches ; do
     update_repo=0
     main_folder="$repository_path"/"$arch"/"$rep_name"
-    rpm_backup="$main_folder/$status-rpm-backup"
-    rpm_new="$main_folder/$status-rpm-new"
-    m_info_backup="$main_folder/$status-media_info-backup"
+    rpm_backup="$main_folder"/"$status"-rpm-backup
+    rpm_new="$main_folder"/"$status"-rpm-new
+    m_info_backup="$main_folder"/"$status"-media_info-backup
     rm -rf "$rpm_backup" "$rpm_new" "$m_info_backup"
     mkdir -p "$rpm_backup"
     mkdir -p "$rpm_new"
