@@ -86,7 +86,7 @@ build_repo() {
 
 if [ "$regenerate_metadata" = 'true' ]; then
 	if [ "$start_sign_rpms" = '1' ]; then
-	    printf '%s\n' "--> Starting to sign rpms in $path"
+	    printf '%s\n' "--> Starting to re-sign rpms in $path"
 	    for i in $(find "$path" -name '*.rpm'); do
 		has_key="$(rpm -Kv "$i" | grep 'key ID' | grep -ow ${KEYNAME,,})"
 		if [ "$has_key" = '' ]; then
@@ -262,14 +262,14 @@ for arch in $arches ; do
 # Add signature to RPM
 		if [ "$sign_rpm" != '0' ]; then
 		    chmod 0666 "$fullname"
-		    printf '%s\n' "--> Starting to sign rpm package"
+		    printf '%s\n' "--> Starting to add sign to rpm package."
 		    cat /dev/null | setsid rpm \
 		    --define "_gpg_name '$KEYNAME'" \
 		    --define "__gpg /usr/bin/gpg" \
 		    --define "_signature gpg" \
 		    --define "__gpg_check_password_cmd /bin/true" \
 		    --define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-		    --addsign "$i" >/dev/null 2>&1;
+		    --addsign "$fullname" >/dev/null 2>&1;
 # Save exit code
 		    rc=$?
 		    if [ "${rc}" = '0' ]; then
