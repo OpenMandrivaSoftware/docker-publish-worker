@@ -46,9 +46,9 @@ if [ "$testing" = 'true' ]; then
 fi
 
 # Checks that 'repository' directory exist
-mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hl,aarch64}/"${rep_name}"/"${status}"/media_info
+mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hnl,aarch64}/"${rep_name}"/"${status}"/media_info
 if [ "$use_debug_repo" = 'true' ]; then
-    mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hl,aarch64}/debug_"${rep_name}"/"${status}"/media_info
+    mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hnl,aarch64}/debug_"${rep_name}"/"${status}"/media_info
 fi
 
 sign_rpm=0
@@ -174,7 +174,7 @@ fi
     cd -
 }
 
-arches="SRPMS i586 i686 x86_64 armv7hl aarch64"
+arches="SRPMS i586 i686 x86_64 armv7hnl aarch64"
 
 # Checks sync status of repository
 rep_locked=0
