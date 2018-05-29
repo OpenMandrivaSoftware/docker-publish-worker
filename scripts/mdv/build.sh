@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 
 printf '%s\n' '--> mdv-scripts/publish-packages: build.sh'
 
