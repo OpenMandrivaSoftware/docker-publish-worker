@@ -133,7 +133,7 @@ fi
 	    try_rebuild=true
 	    retry=0
 	    while $try_rebuild; do
-		if [ -z $(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest) ]; then
+		if [ -z "$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)" ]; then
 		    try_rebuild=false
 		    [ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
 		    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
