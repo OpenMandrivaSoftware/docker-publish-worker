@@ -90,9 +90,9 @@ if [ "$regenerate_metadata" = 'true' ]; then
 	    printf '%s\n' "--> Starting to re-sign rpms in $path"
 	    for i in $(find "$path" -name '*.rpm'); do
 		has_key="$(rpm -Kv "$i" | grep 'key ID' | grep -ow ${KEYNAME,,})"
-		if [ "$has_key" = '' ]; then
+		if [ -z "$has_key" ]; then
 		    chmod 0666 "$i"
-		    cat /dev/null | setsid rpm \
+		    cat /dev/null | setsid rpm --quiet \
 		    --define "_gpg_name '$KEYNAME'" \
 		    --define "__gpg /usr/bin/gpg" \
 		    --define "_signature gpg" \
@@ -264,7 +264,7 @@ for arch in $arches ; do
 		if [ "$sign_rpm" != '0' ]; then
 		    chmod 0666 "$fullname"
 		    printf '%s\n' "--> Starting to add sign to rpm package."
-		    cat /dev/null | setsid rpm \
+		    cat /dev/null | setsid rpm --quiet \
 		    --define "_gpg_name '$KEYNAME'" \
 		    --define "__gpg /usr/bin/gpg" \
 		    --define "_signature gpg" \
