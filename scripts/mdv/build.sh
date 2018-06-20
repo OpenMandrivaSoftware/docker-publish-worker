@@ -130,23 +130,29 @@ fi
 	if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
 	    MAX_RETRIES=10
 	    WAIT_TIME=60
-	    try_rebuild=true
 	    retry=0
-	    while $try_rebuild; do
-		if [ -z "$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)" ]; then
-		    try_rebuild=false
-		    [ -e "${path}"/.repodata ] && rm -rf "${path}"/.repodata
-		    /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
-		    rc=$?
-		    try_rebuild=false
-		elif [ "${rc}" != 0 ] && [ "${retry}" -lt "${MAX_RETRIES}" ]; then
-		    try_rebuild=true
-		    (( retry=$retry+1 ))
-		    printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
-		    sleep "${WAIT_TIME}"
-		else
-		    try_rebuild=false
-		fi
+            while [ "$retry" -lt "$MAX_RETRIES" ]; do
+                while [ -n "$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)" ]; do
+                    printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
+                    sleep "${WAIT_TIME}"
+                    retry=$((retry+1))
+		    if [ "$retry" -ge "$MAX_RETRIES" ]; then
+                        printf '---> Other publisher still running after %s retries, giving up\n' "$retry"
+		        break
+                    fi
+                done
+		[ "$retry" -ge "$MAX_RETRIES" ] && break
+
+                printf '%s\n' "--> Running metadata generator"
+                rm -rf "${path}"/.repodata
+                /usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
+                rc=$?
+                if [ "$rc" = "0" ]; then
+                    break
+                else
+                    printf '%s\n' "---> Failed"
+                    retry=$((retry+1))
+                fi
 	    done
 	elif  [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
 	    printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}"
