@@ -88,6 +88,7 @@ build_repo() {
 	if [ "$regenerate_metadata" = 'true' ]; then
 		if [ "$start_sign_rpms" = '1' ]; then
 			printf '%s\n' "--> Starting to re-sign rpms in $path"
+			failures=0
 			for i in $(find "$path" -name '*.rpm'); do
 				has_key="$(rpm -Kv "$i" | grep 'key ID' | grep -ow ${KEYNAME,,})"
 				if [ -z "$has_key" ]; then
@@ -98,18 +99,18 @@ build_repo() {
 					--define "_signature gpg" \
 					--define "__gpg_check_password_cmd /bin/true" \
 					--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-					--resign "$i" >/dev/null 2>&1;
+					--resign "$i" >/dev/null 2>&1
+					rc="$?"
+					[ "$rc" != "0" ] && failures=$((failures+1))
 					chmod 0644 "$i"
 				else
 					printf '%s\n' "--> Package $i already signed"
 				fi
 			done
-			# Save exit code
-			rc=$?
-			if [ "${rc}" = '0' ]; then
-				printf '%s\n' "--> Packages in $path has been signed successfully."
+			if [ "${failures}" = '0' ]; then
+				printf '%s\n' "--> Packages in $path have been signed successfully."
 			else
-				printf '%s\n' "--> Packages in $path has not been signed successfully!!!"
+				printf '%s\n' "--> Packages in $path have not been signed successfully!!!"
 			fi
 		else
 			printf '%s\n' "--> RPM signing is disabled"
@@ -122,7 +123,7 @@ build_repo() {
 	sync
 
 	# Build repo
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Generating repository..."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Generating repository..."
 
 	cd "${script_path}"/
 	if [ "$regenerate_metadata" != 'true' ]; then
@@ -181,11 +182,13 @@ build_repo() {
 	fi
 
 	printf '%s\n' "${rc}" > "${container_path}"/"${arch}".exit-code
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Done."
 	cd -
 }
 
 arches="SRPMS i586 i686 x86_64 armv7hnl aarch64"
+
+printf '%s\n' "--> Publishing for arches ${arches}"
 
 # Checks sync status of repository
 rep_locked=0
@@ -205,7 +208,7 @@ if [ "${rep_locked}" != 0 ]; then
 	for arch in $arches ; do
 		rm -f "${repository_path}"/"${arch}"/"${rep_name}"/.publish.lock
 	done
-	printf '%s\n' "--> ["LANG=en_US.UTF-8  $(date -u)"] ERROR: Mirror is currently synchronising the repository state."
+	printf '%s\n' "--> ["$(LANG=en_US.UTF-8 date -u)"] ERROR: Mirror is currently synchronising the repository state."
 	exit 1
 fi
 
@@ -231,7 +234,7 @@ if [ "${all_packages_exist}" != 0 ]; then
 	for arch in $arches ; do
 		rm -f "${repository_path}"/"${arch}"/"${rep_name}"/.publish.lock
 	done
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] ERROR: some packages does not exist"
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] ERROR: some packages does not exist"
 	exit 1
 fi
 
@@ -259,7 +262,7 @@ for arch in $arches; do
 	fi
 
 	# Downloads new packages
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Downloading new packages..."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Downloading new packages..."
 	new_packages="$container_path/new.$arch.list"
 	if [ -f "$new_packages" ]; then
 		cd $rpm_new
@@ -280,7 +283,7 @@ for arch in $arches; do
 					--define "_signature gpg" \
 					--define "__gpg_check_password_cmd /bin/true" \
 					--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-					--addsign "$fullname" >/dev/null 2>&1;
+					--addsign "$fullname" >/dev/null 2>&1
 					# Save exit code
 					rc=$?
 					if [ "${rc}" = '0' ]; then
@@ -298,10 +301,10 @@ for arch in $arches; do
 		done
 		update_repo=1
 	fi
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Done."
 
 	# Creates backup
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Creating backup..."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Creating backup..."
 	old_packages="$container_path/old.$arch.list"
 	if [ -f "$old_packages" ]; then
 		for fullname in $(cat $old_packages) ; do
@@ -321,8 +324,8 @@ for arch in $arches; do
 		done
 		update_repo=1
 	fi
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Starting to move packages to the target repository."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Done."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Starting to move packages to the target repository."
 
 	# some debug output
 	if [ "$debug_output" = "1" ]; then
@@ -349,7 +352,7 @@ for arch in $arches; do
 		fi
 	fi
 
-	printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Done."
+	printf '%s\n' "--> [$(LANG=en_US.UTF-8 date -u)] Done."
 	cd "${main_folder}"
 	rm -rf "${rpm_new}"
 
