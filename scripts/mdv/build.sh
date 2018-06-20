@@ -46,12 +46,6 @@ if [ "$testing" = 'true' ]; then
 	use_debug_repo='false'
 fi
 
-# Checks that 'repository' directory exist
-mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hnl,aarch64}/"${rep_name}"/"${status}"/media_info
-if [ "$use_debug_repo" = 'true' ]; then
-	mkdir -p "${repository_path}"/{SRPMS,i586,i686,x86_64,armv7hnl,aarch64}/debug_"${rep_name}"/"${status}"/media_info
-fi
-
 sign_rpm=0
 gnupg_path=/root/.gnupg
 KEYNAME=''
@@ -186,9 +180,22 @@ build_repo() {
 	cd -
 }
 
-arches="SRPMS i586 i686 x86_64 armv7hnl aarch64"
+arches=""
+for i in "${container_path}"/new.*.list; do
+	arches="$arches $(basename $i .list |cut -b5-)"
+done
 
 printf '%s\n' "--> Publishing for arches ${arches}"
+
+# Checks that 'repository' directory exist
+# FIXME media_info etc. probably shouldn't exist for dnf based trees
+for arch in ${arches}; do
+	mkdir -p "${repository_path}"/${arch}/"${rep_name}"/"${status}"/media_info
+	if [ "$use_debug_repo" = 'true' ]; then
+		mkdir -p "${repository_path}"/${arch}/debug_"${rep_name}"/"${status}"/media_info
+	fi
+done
+
 
 # Checks sync status of repository
 rep_locked=0
