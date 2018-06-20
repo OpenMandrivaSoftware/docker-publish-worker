@@ -85,7 +85,7 @@ build_repo() {
     start_sign_rpms=$4
     KEYNAME=$5
 
-if [ "$regenerate_metadata" = 'true' ]; then
+    if [ "$regenerate_metadata" = 'true' ]; then
 	if [ "$start_sign_rpms" = '1' ]; then
 	    printf '%s\n' "--> Starting to re-sign rpms in $path"
 	    for i in $(find "$path" -name '*.rpm'); do
@@ -114,7 +114,12 @@ if [ "$regenerate_metadata" = 'true' ]; then
 	else
 	    printf '%s\n' "--> RPM signing is disabled"
 	fi
-fi
+    fi
+
+    # Just to make sure newly signed and moved packages
+    # are in the filesystem and are guaranteed to show
+    # up in a new docker instance
+    sync
 
 # Build repo
     printf '%s\n' "--> [LANG=en_US.UTF-8  $(date -u)] Generating repository..."
