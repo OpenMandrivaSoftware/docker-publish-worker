@@ -279,6 +279,7 @@ for arch in $arches; do
 				curl -O -L "${file_store_url}"/"${sha1}"
 				mv "$sha1" "$fullname"
 				printf '%s\n' $fullname >> "$new_packages.downloaded"
+				printf 'MIME type of $fullame: %s\n' $(file -bi $fullname)
 				chown root:root $fullname
 				# Add signature to RPM
 				if [ "$sign_rpm" != '0' ]; then
