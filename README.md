@@ -8,6 +8,8 @@ Container must have platforms mounted in /share/platforms
 How to perfom publisher database unlock
 
 on abfui:
+
 ```source envfile; cd rosa-build; rails console```
 and in console:
+
 ```RepositoryStatus.where.not(status: 0).each do |a| a.ready end```
