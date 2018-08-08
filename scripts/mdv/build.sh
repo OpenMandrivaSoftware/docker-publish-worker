@@ -180,10 +180,11 @@ build_repo() {
 	cd -
 }
 
-arches=""
-for i in "${container_path}"/new.*.list; do
-	arches="$arches $(basename $i .list |cut -b5-)"
-done
+if [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
+	arches="SRPMS i586 x86_64 armv7hl aarch64"
+else
+	arches="SRPMS i686 x86_64 armv7hnl aarch64 znver1"
+fi
 
 printf '%s\n' "--> Publishing for arches ${arches}"
 
@@ -195,7 +196,6 @@ for arch in ${arches}; do
 		mkdir -p "${repository_path}"/${arch}/debug_"${rep_name}"/"${status}"/media_info
 	fi
 done
-
 
 # Checks sync status of repository
 rep_locked=0
