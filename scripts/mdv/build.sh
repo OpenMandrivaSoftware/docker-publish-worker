@@ -131,18 +131,42 @@ build_repo() {
 			MAX_RETRIES=10
 			WAIT_TIME=60
 			retry=0
-			while [ "$retry" -lt "$MAX_RETRIES" ]; do
-				while [ -n "$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)" ]; do
-					printf '%s\n' "--> Other publisher is still running. Delay ${WAIT_TIME} sec..."
+			OLD_PUBLISHER_ID="$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)"
+			if [ -n "$OLD_PUBLISHER_ID" ]; then
+				printf '%s\n' "--> Other publisher ${PUBLISHER_ID} is still running. Delay ${WAIT_TIME} sec..."
+				while [ "$retry" -lt "$MAX_RETRIES" ]; do
+					PUBLISHER_ID="$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)"
+					[ -z "$PUBLISHER_ID" ] && break
+
 					sleep "${WAIT_TIME}"
 					retry=$((retry+1))
-					if [ "$retry" -ge "$MAX_RETRIES" ]; then
-						printf '%s Other publisher still running after %s retries, giving up\n' '--->' "$retry"
-						break
+					if [ "$PUBLISHER_ID" != "$OLD_PUBLISHER_ID" ]; then
+						printf '%s\n' "--> Switching from waiting for publisher ${OLD_PUBLISHER_ID} to waiting for ${PUBLISHER_ID}"
+						OLD_PUBLISHER_ID="$PUBLISHER_ID"
+						retry=0
+					elif [ "$retry" -ge "$MAX_RETRIES" ]; then
+						printf '%s\n' "---> Publisher ${PUBLISHER_ID} stuck for more than $((RETRY*WAIT_TIME)) seconds, killing"
+						/usr/bin/docker stop -t 0 ${PUBLISHER_ID}
+						/usr/bin/docker rm -f ${PUBLISHER_ID}
+						sleep "${WAIT_TIME}"
+						PUBLISHER_ID="$(/usr/bin/docker ps -q --filter=ancestor=openmandriva/createrepo:latest)"
+						if [ -z "$PUBLISHER_ID" ]; then
+							# All good...
+							break
+						elif [ "$PUBLISHER_ID" = "$OLD_PUBLISHER_ID" ]; then
+							printf '%s\n' "Publisher ${PUBLISHER_ID} refused to die. Aborting."
+							exit 1
+						else
+							printf '%s\n' "--> Switching from waiting for publisher ${OLD_PUBLISHER_ID} to waiting for ${PUBLISHER_ID}"
+							OLD_PUBLISHER_ID="$PUBLISHER_ID"
+							retry=0
+						fi
 					fi
 				done
-				[ "$retry" -ge "$MAX_RETRIES" ] && break
+			fi
 
+			retry=0
+			while [ "$retry" -lt "$MAX_RETRIES" ]; do
 				printf '%s\n' "--> Running metadata generator"
 				rm -rf "${path}"/.repodata
 				/usr/bin/docker run --rm -v /home/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
