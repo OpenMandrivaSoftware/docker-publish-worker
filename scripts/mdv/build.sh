@@ -137,7 +137,7 @@ build_repo() {
 					sleep "${WAIT_TIME}"
 					retry=$((retry+1))
 					if [ "$retry" -ge "$MAX_RETRIES" ]; then
-						printf '---> Other publisher still running after %s retries, giving up\n' "$retry"
+						printf '%s Other publisher still running after %s retries, giving up\n' '--->' "$retry"
 						break
 					fi
 				done
