@@ -16,7 +16,7 @@ echo "REPOSITORY_NAME = $rep_name"
 # - /home/vagrant/container
 script_path="$(pwd)"
 container_path="$script_path"/../container/
-repository_path=/platforms/"$save_to_platform"/repository/
+repository_path=repository_path="${PLATFORM_PATH}"
 
 # See: https://abf.rosalinux.ru/abf/abf-ideas/issues/51
 # Move debug packages to special separate repository
@@ -31,10 +31,6 @@ if [ "$testing" = 'true' ]; then
   status='testing'
   use_debug_repo='false'
 fi
-
-# Update genhdlist2
-urpmi.update -a
-urpmi --downloader wget --wget-options --auth-no-challenge --auto --no-suggests --no-verify-rpm --fastunsafe genhdlist2
 
 arches="SRPMS i586 i686 x86_64 armv7hnl aarch64"
 for arch in $arches ; do
