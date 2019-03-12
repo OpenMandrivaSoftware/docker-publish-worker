@@ -16,7 +16,7 @@ echo "REPOSITORY_NAME = $rep_name"
 # - /home/vagrant/container
 script_path="$(pwd)"
 container_path="$script_path"/../container/
-repository_path=repository_path="${PLATFORM_PATH}"
+repository_path="${PLATFORM_PATH}"
 
 # See: https://abf.rosalinux.ru/abf/abf-ideas/issues/51
 # Move debug packages to special separate repository
