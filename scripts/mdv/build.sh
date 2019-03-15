@@ -207,7 +207,7 @@ build_repo() {
 if [[ "$save_to_platform" =~ ^.*3.0.*$ ]]; then
 	arches="SRPMS i586 x86_64 armv7hl aarch64"
 else
-	arches="SRPMS i686 x86_64 armv7hnl aarch64 znver1"
+	arches="SRPMS i686 x86_64 armv7hnl aarch64 znver1 riscv64"
 fi
 
 printf '%s\n' "--> Publishing for arches ${arches}"
