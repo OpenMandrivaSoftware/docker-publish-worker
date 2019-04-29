@@ -169,7 +169,7 @@ build_repo() {
 			while [ "$retry" -lt "$MAX_RETRIES" ]; do
 				printf '%s\n' "--> Running metadata generator"
 				rm -rf "${path}"/.repodata
-				/usr/bin/docker run --rm -v /media/space/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
+				/usr/bin/docker run --rm -v /var/lib/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
 				rc=$?
 				if [ "$rc" = "0" ]; then
 					break
@@ -190,7 +190,7 @@ build_repo() {
 		rm -f "${path}"/media_info/{new,old}-metadata.lst
 	else
 		if [[ "$save_to_platform" =~ ^.*cooker.*$ ]]; then
-			/usr/bin/docker run --rm -v /media/space/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}" regenerate
+			/usr/bin/docker run --rm -v /var/lib/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}" regenerate
 			rc=$?
 		else
 			printf '%s\n' "/usr/bin/genhdlist2 -v --clean --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist $path"
