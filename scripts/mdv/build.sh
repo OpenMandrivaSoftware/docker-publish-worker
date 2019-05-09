@@ -84,22 +84,17 @@ build_repo() {
 			printf '%s\n' "--> Starting to re-sign rpms in $path"
 			failures=0
 			for i in $(find "$path" -name '*.rpm'); do
-				has_key="$(rpm -Kv "$i" | grep 'key ID' | grep -ow ${KEYNAME,,})"
-				if [ -z "$has_key" ]; then
-					chmod 0666 "$i"
-					cat /dev/null | setsid rpm --quiet \
-					--define "_gpg_name '$KEYNAME'" \
-					--define "__gpg /usr/bin/gpg" \
-					--define "_signature gpg" \
-					--define "__gpg_check_password_cmd /bin/true" \
-					--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-					--resign "$i" >/dev/null 2>&1
-					rc="$?"
-					[ "$rc" != "0" ] && failures=$((failures+1))
-					chmod 0644 "$i"
-				else
-					printf '%s\n' "--> Package $i already signed"
-				fi
+				chmod 0666 "$i"
+				cat /dev/null | setsid rpm --quiet \
+				--define "_gpg_name '$KEYNAME'" \
+				--define "__gpg /usr/bin/gpg" \
+				--define "_signature gpg" \
+				--define "__gpg_check_password_cmd /bin/true" \
+				--define "__gpg_sign_cmd %{__gpg} gpg --no-tty --pinentry-mode loopback --batch --no-armor --digest-algo 'sha512' --passphrase-file '$SECRET' --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
+				--resign "$i" >/dev/null 2>&1
+				rc="$?"
+				[ "$rc" != "0" ] && failures=$((failures+1))
+				chmod 0644 "$i"
 			done
 			if [ "${failures}" = '0' ]; then
 				printf '%s\n' "--> Packages in $path have been signed successfully."
