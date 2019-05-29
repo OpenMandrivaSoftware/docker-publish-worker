@@ -116,8 +116,6 @@ build_repo() {
 
 	cd "${script_path}"/
 	if [ "$regenerate_metadata" != 'true' ]; then
-		# genhdlist2 in rosa/omv supports "--merge" option that can be used to speed up publication process.
-		# See: https://abf.io/abf/abf-ideas/issues/149
 		rm -f "${path}"/media_info/{new,old}-metadata.lst
 		[ -f "${container_path}"/new."${arch}".list.downloaded ] && cp -f "${container_path}"/new."${arch}".list.downloaded ${path}/media_info/new-metadata.lst
 		[ -f "${container_path}"/old."${arch}".list ] && cp -f "${container_path}"/old."${arch}".list "${path}"/media_info/old-metadata.lst
@@ -178,8 +176,7 @@ build_repo() {
 			XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --synthesis-filter='.cz:xz -7 -T0' --xml-info --xml-info-filter='.lzma:xz -7 -T0' --no-hdlist --merge --no-bad-rpm ${path}
 			rc=$?
 		else
-			printf '%s\n' "/usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist --merge --no-bad-rpm ${path}"
-			XZ_OPT="-7 -T0" /usr/bin/genhdlist2 -v --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist --merge --no-bad-rpm ${path}
+			/usr/bin/docker run --rm -v /var/lib/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}"
 			rc=$?
 		fi
 		rm -f "${path}"/media_info/{new,old}-metadata.lst
@@ -188,8 +185,7 @@ build_repo() {
 			/usr/bin/docker run --rm -v /var/lib/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}" regenerate
 			rc=$?
 		else
-			printf '%s\n' "/usr/bin/genhdlist2 -v --clean --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist $path"
-			/usr/bin/genhdlist2 -v --clean --nolock --allow-empty-media --versioned --xml-info --xml-info-filter='.lzma:lzma -0 --text' --no-hdlist ${path}
+			/usr/bin/docker run --rm -v /var/lib/openmandriva/abf-downloads:/share/platforms openmandriva/createrepo "${path}" regenerate
 			rc=$?
 		fi
 	fi
