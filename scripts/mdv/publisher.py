@@ -141,8 +141,8 @@ def repo_unlock(path):
     if os.path.exists(path + '/.publish.lock'):
        os.remove(path + '/.publish.lock')
 
-def regenerate_metadata_repo():
-    if regenerate_metadata == 'true' and released == 'false':
+def regenerate_metadata_repo(action):
+    if action == 'regenerate':
         status = 'release'
         for arch in arches:
             path = repository_path + '/' + arch + '/' + repository_name + '/' + status
@@ -152,12 +152,15 @@ def regenerate_metadata_repo():
             # create .publish.lock
             repo_lock(path)
             try:
-                p = subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', path])
+                # regenerate - mean from scratch
+                p = subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', path, action])
                 repo_unlock(path)
             except:
                 print("something went wrong with publishing for %s" % path)
                 repo_unlock(path)
 
 
-#sign_rpm()
-regenerate_metadata_repo()
+if __name__ == '__main__':
+    if regenerate_metadata == 'true' and released == 'false':
+        regenerate_metadata_repo()
+
