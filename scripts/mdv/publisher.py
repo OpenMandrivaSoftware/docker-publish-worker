@@ -28,7 +28,6 @@ save_to_platform = os.environ.get('SAVE_TO_PLATFORM')
 repository_name = os.environ.get('REPOSITORY_NAME')
 
 is_container = os.environ.get('IS_CONTAINER')
-testing = os.environ.get('TESTING')
 regenerate_metadata = os.environ.get('REGENERATE_METADATA')
 # not need
 start_sign_rpms = os.environ.get('START_SIGN_RPMS')
@@ -113,7 +112,7 @@ def generate_rpmmacros():
 
 def sign_rpm(path):
     generate_rpmmacros()
-    download_hash('hash.txt')
+#    download_hash('hash.txt')
     files = []
     for r, d, f in os.walk(path):
         for rpm in f:
@@ -124,8 +123,9 @@ def sign_rpm(path):
             try:
                 print('signing rpm %s' % rpm)
                 p = subprocess.check_output(['rpm', '--addsign', rpm])
-            except OSError:
+            except:
                 print('something went wrong with signing rpm %s' % rpm)
+                continue
     else:
         print("no key provided, signing disabled")
 
@@ -142,8 +142,13 @@ def repo_unlock(path):
        os.remove(path + '/.publish.lock')
 
 def regenerate_metadata_repo(action):
-    if action == 'regenerate':
+    if released == 'false':
         status = 'release'
+    if released == 'true':
+        status = 'updates'
+    if testing == 'true':
+        status = 'testing'
+    if action == 'regenerate':
         for arch in arches:
             path = repository_path + '/' + arch + '/' + repository_name + '/' + status
             # /share/platforms/cooker/repository/riscv64/main
@@ -152,15 +157,32 @@ def regenerate_metadata_repo(action):
             # create .publish.lock
             repo_lock(path)
             try:
-                # regenerate - mean from scratch
                 p = subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', path, action])
+                repo_unlock(path)
+            except:
+                print("something went wrong with publishing for %s" % path)
+                repo_unlock(path)
+    else:
+        for arch in arches:
+            path = repository_path + '/' + arch + '/' + repository_name + '/' + status
+            # /share/platforms/cooker/repository/riscv64/main/release or testing or updates
+            sign_rpm(path)
+#            print("running metadata generator for %s" % path)
+            # create .publish.lock
+            repo_lock(path)
+            try:
+                p = subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', path, action])
+                print('openmandriva/createrepo', path, action)
                 repo_unlock(path)
             except:
                 print("something went wrong with publishing for %s" % path)
                 repo_unlock(path)
 
 
-if __name__ == '__main__':
-    if regenerate_metadata == 'true' and released == 'false':
-        regenerate_metadata_repo()
+#regenerate_metadata_repo()
 
+if __name__ == '__main__':
+    if regenerate_metadata == 'true':
+        regenerate_metadata_repo('regenerate')
+    if regenerate_metadata == '':
+        regenerate_metadata_repo('')
