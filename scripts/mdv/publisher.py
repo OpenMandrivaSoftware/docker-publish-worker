@@ -7,6 +7,7 @@ import json
 import subprocess
 import time
 import shutil
+# RELEASED=false REPOSITORY_NAME=main PLATFORM_PATH=/share/platforms/cooker/repository REGENERATE_METADATA= python publisher.py
 
 # static values
 file_store_base = 'http://file-store.openmandriva.org'
