@@ -34,7 +34,7 @@ regenerate_metadata = os.environ.get('REGENERATE_METADATA')
 start_sign_rpms = os.environ.get('START_SIGN_RPMS')
 # main_folder="$repository_path"/"$arch"/"$repository_name"
 #arch = 'x86_64'
-#repository_path = repository_path + '/' + arch + '/' + repository_name 
+#repository_path = repository_path + '/' + arch + '/' + repository_name
 
 build_id="$ID"
 
@@ -108,7 +108,7 @@ def generate_rpmmacros():
                file.write('%__gpg_check_password_cmd /bin/true\n')
                file.write('%__gpg /usr/bin/gpg\n')
                # long string
-               file.write('%__gpg_sign_cmd %__gpg gpg --no-tty ' 
+               file.write('%__gpg_sign_cmd %__gpg gpg --no-tty '
                           '--pinentry-mode loopback --no-armor --no-secmem-warning '
                           '--sign --detach-sign --passphrase-file {} --sign '
                           '--detach-sign --output %__signature_filename %__plaintext_filename\n'.format(gpg_dir + '/secret'))
@@ -152,27 +152,56 @@ def repo_unlock(path):
     if os.path.exists(path + '/.publish.lock'):
        os.remove(path + '/.publish.lock')
 
+def backup_rpms(old_list, backup_repo):
+    arch = old_list.split('.')
+    repo = repository_path + '/' + arch[1] + '/' + repository_name + '/' + status
+    debug_repo = repository_path + '/' + arch[1] + '/' + 'debug_' + repository_name + '/' + status
+    backup_debug_repo = repository_path + '/' + arch[1] + '/' + 'debug_' + repository_name + '/' + status + '-rpm-backup/'
+    shutil.rmtree(backup_repo)
+    shutil.rmtree(backup_debug_repo)
+
+    if os.path.exists(old_list) and os.path.getsize(old_list) > 0:
+        with open(old_list, 'r') as fp:
+            lines = [line.strip() for line in fp]
+            if not os.path.exists(backup_repo):
+                os.makedirs(backup_repo)
+            if not os.path.exists(backup_debug_repo):
+                os.makedirs(backup_debug_repo)
+            for rpm in lines:
+                if 'debuginfo' in rpm:
+                    if os.path.exists(debug_repo + '/' + rpm):
+                        print("moving %s to %s" %(rpm, backup_repo))
+                        shutil.move(debug_repo + '/' + rpm, backup_debug_repo)
+                if os.path.exists(repo + '/' + rpm):
+                    print("moving %s to %s" %(rpm, backup_repo))
+                    shutil.move(repo + '/' + rpm, backup_repo)
+
+
 def prepare_rpms():
     sourcepath = '/tmp/'
+    files = [f for f in os.listdir(container_path) if re.match(r'new.(.*)\.list$', f)]
+    arches = [i.split('.', 2)[1] for i in files]
+    print(arches)
     for arch in arches:
         # /root/docker-publish-worker/container/new.riscv64.list
         rpm_arch_list = container_path + '/' + 'new.' + arch + '.list'
+        # old.SRPMS.list
+        rpm_old_list = container_path + '/' + 'old.' + arch + '.list'
         # /share/platforms/rolling/repository/SRPMS/main/release-rpm-new/
         tiny_repo = repository_path + '/' + arch + '/' + repository_name + '/' + status + '-rpm-new/'
+        # backup repo for rollaback
+        backup_repo = repository_path + '/' + arch + '/' + repository_name + '/' + status + '-rpm-backup/'
+        backup_debug_repo = repository_path + '/' + arch + '/' + 'debug_' + repository_name + '/' + status + '-rpm-backup/'
         repo = repository_path + '/' + arch + '/' + repository_name + '/' + status
         debug_repo = repository_path + '/' + arch + '/' + 'debug_' + repository_name + '/' + status
+        backup_rpms(rpm_old_list, backup_repo)
         for r, d, f in os.walk(sourcepath):
             for rpm in f:
-#                print(rpm)
                 if '.rpm' in rpm:
                     os.remove(sourcepath + rpm)
-#        print(tiny_repo)
-#        print(debug_repo)
         if os.path.exists(rpm_arch_list) and os.path.getsize(rpm_arch_list) > 0:
-            print(rpm_arch_list)
             download_hash(rpm_arch_list)
             source = os.listdir(sourcepath)
-            # copy files from /tmp/ to /share/platforms/rolling/repository/ARCH/main/release-rpm-new/
             for files in source:
                 if files.endswith('.rpm'):
                     # target dir + foo.x86_64.rpm to dir
@@ -181,14 +210,36 @@ def prepare_rpms():
                     shutil.copy(sourcepath + files, tiny_repo)
             sign_rpm(tiny_repo)
             for rpm in os.listdir(tiny_repo):
+                # move all rpm filex exclude debuginfo
                 if 'debuginfo' not in rpm:
                     print("moving %s to %s" %(rpm, repo))
                     shutil.copy(tiny_repo + rpm, repo)
+            repo_lock(repo)
+            try:
+               p = subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', repo])
+               repo_unlock(repo)
+            except:
+                print('publishing failed, rollbacking rpms')
+                repo_unlock(repo)
+                # rollback rpms
+                shutil.copy(backup_repo + rpm, repo)
+
+                # rollback rpms
             # move debuginfo in place
             for debug_rpm in os.listdir(tiny_repo):
                 if 'debuginfo' in debug_rpm:
                     print("moving %s to %s" %(debug_rpm, debug_repo))
                     shutil.copy(tiny_repo + debug_rpm, debug_repo)
+            if os.path.exists(debug_repo):
+                repo_lock(debug_repo)
+                try:
+                    p = subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', debug_repo])
+                    repo_unlock(debug_repo)
+                except:
+                    print('publishing failed, rollbacking rpms')
+                    repo_unlock(debug_repo)
+                    # rollback rpms
+                    shutil.copy(backup_debug_repo + debug_rpm, debug_repo)
             shutil.rmtree(tiny_repo)
 
 
@@ -230,5 +281,4 @@ if __name__ == '__main__':
     if regenerate_metadata == 'true':
         regenerate_metadata_repo('regenerate')
     if regenerate_metadata == '':
-#        regenerate_metadata_repo('')
         prepare_rpms()
