@@ -7,6 +7,8 @@ import json
 import subprocess
 import time
 import shutil
+import concurrent.futures
+
 # RELEASED=false REPOSITORY_NAME=main PLATFORM_PATH=/share/platforms/cooker/repository REGENERATE_METADATA= python publisher.py
 
 # static values
@@ -33,7 +35,7 @@ repository_name = os.environ.get('REPOSITORY_NAME')
 is_container = os.environ.get('IS_CONTAINER')
 regenerate_metadata = os.environ.get('REGENERATE_METADATA')
 # not need
-start_sign_rpms = os.environ.get('START_SIGN_RPMS')
+resign = os.environ.get('RESIGN')
 # main_folder="$repository_path"/"$arch"/"$repository_name"
 # arch = 'x86_64'
 # repository_path = repository_path + '/' + arch + '/' + repository_name
@@ -54,7 +56,7 @@ if testing == 'true':
     status = 'testing'
 
 
-def download_hash(hashfile):
+def download_hash(hashfile, arch):
     with open(hashfile, 'r') as fp:
         lines = [line.strip() for line in fp]
         for hash1 in lines:
@@ -73,8 +75,12 @@ def download_hash(hashfile):
                 print("%s %s" % (name, fstore_file_url))
                 # curl -O -L http://file-store.openmandriva.org/api/v1/file_stores/169a726a478251325230bf3aec3a8cc04444ed3b
                 download_file = requests.get(fstore_file_url)
-                tmpname = '/tmp/' + name
-                with open(tmpname, 'wb') as f:
+                tmp_dir = '/tmp/' + arch
+                tmp_name = '/tmp/' + arch + '/' + name
+                if not os.path.exists(tmp_dir):
+                    os.makedirs(tmp_dir)
+
+                with open(tmp_name, 'wb') as f:
                     f.write(download_file.content)
 
 
@@ -130,8 +136,6 @@ def generate_rpmmacros():
 
 
 def sign_rpm(path):
-    generate_rpmmacros()
-#    download_hash('hash.txt')
     files = []
     for r, d, f in os.walk(path):
         for rpm in f:
@@ -194,77 +198,91 @@ def backup_rpms(old_list, backup_repo):
                     shutil.move(repo + '/' + rpm, backup_repo)
 
 
+def invoke_docker(arch):
+    sourcepath = '/tmp/' + arch + '/'
+    # /root/docker-publish-worker/container/new.riscv64.list
+    rpm_arch_list = container_path + '/' + 'new.' + arch + '.list'
+    # old.SRPMS.list
+    rpm_old_list = container_path + '/' + 'old.' + arch + '.list'
+    # /share/platforms/rolling/repository/SRPMS/main/release-rpm-new/
+    tiny_repo = repository_path + '/' + arch + '/' + \
+        repository_name + '/' + status + '-rpm-new/'
+    # backup repo for rollaback
+    backup_repo = repository_path + '/' + arch + '/' + \
+        repository_name + '/' + status + '-rpm-backup/'
+    backup_debug_repo = repository_path + '/' + arch + '/' + \
+        'debug_' + repository_name + '/' + status + '-rpm-backup/'
+    repo = repository_path + '/' + arch + '/' + repository_name + '/' + status
+    debug_repo = repository_path + '/' + arch + '/' + \
+        'debug_' + repository_name + '/' + status
+    backup_rpms(rpm_old_list, backup_repo)
+    for r, d, f in os.walk(sourcepath):
+        for rpm in f:
+            if '.rpm' in rpm:
+                os.remove(sourcepath + rpm)
+    if os.path.exists(rpm_arch_list) and os.path.getsize(rpm_arch_list) > 0:
+        download_hash(rpm_arch_list, arch)
+        source = os.listdir(sourcepath)
+        for files in source:
+            if files.endswith('.rpm'):
+                # target dir + foo.x86_64.rpm to dir
+                if not os.path.exists(tiny_repo):
+                    os.makedirs(tiny_repo)
+                shutil.copy(sourcepath + files, tiny_repo)
+        sign_rpm(tiny_repo)
+        for rpm in os.listdir(tiny_repo):
+            # move all rpm filex exclude debuginfo
+            if 'debuginfo' not in rpm:
+                print("moving %s to %s" % (rpm, repo))
+                shutil.copy(tiny_repo + rpm, repo)
+        repo_lock(repo)
+        try:
+            subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
+                                     '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', repo])
+            repo_unlock(repo)
+        except:
+            print('publishing failed, rollbacking rpms')
+            repo_unlock(repo)
+            # rollback rpms
+            shutil.copy(backup_repo + rpm, repo)
+
+            # rollback rpms
+        # move debuginfo in place
+        for debug_rpm in os.listdir(tiny_repo):
+            if 'debuginfo' in debug_rpm:
+                print("moving %s to %s" % (debug_rpm, debug_repo))
+                shutil.copy(tiny_repo + debug_rpm, debug_repo)
+        if os.path.exists(debug_repo):
+            repo_lock(debug_repo)
+            try:
+                subprocess.check_output(
+                    ['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', debug_repo])
+                repo_unlock(debug_repo)
+            except:
+                print('publishing failed, rollbacking rpms')
+                repo_unlock(debug_repo)
+                # rollback rpms
+                shutil.copy(backup_debug_repo + debug_rpm, debug_repo)
+        shutil.rmtree(tiny_repo)
+
+
 def prepare_rpms():
-    sourcepath = '/tmp/'
     files = [f for f in os.listdir(
         container_path) if re.match(r'new.(.*)\.list$', f)]
     arches = [i.split('.', 2)[1] for i in files]
     print(arches)
-    for arch in arches:
-        # /root/docker-publish-worker/container/new.riscv64.list
-        rpm_arch_list = container_path + '/' + 'new.' + arch + '.list'
-        # old.SRPMS.list
-        rpm_old_list = container_path + '/' + 'old.' + arch + '.list'
-        # /share/platforms/rolling/repository/SRPMS/main/release-rpm-new/
-        tiny_repo = repository_path + '/' + arch + '/' + \
-            repository_name + '/' + status + '-rpm-new/'
-        # backup repo for rollaback
-        backup_repo = repository_path + '/' + arch + '/' + \
-            repository_name + '/' + status + '-rpm-backup/'
-        backup_debug_repo = repository_path + '/' + arch + '/' + \
-            'debug_' + repository_name + '/' + status + '-rpm-backup/'
-        repo = repository_path + '/' + arch + '/' + repository_name + '/' + status
-        debug_repo = repository_path + '/' + arch + '/' + \
-            'debug_' + repository_name + '/' + status
-        backup_rpms(rpm_old_list, backup_repo)
-        for r, d, f in os.walk(sourcepath):
-            for rpm in f:
-                if '.rpm' in rpm:
-                    os.remove(sourcepath + rpm)
-        if os.path.exists(rpm_arch_list) and os.path.getsize(rpm_arch_list) > 0:
-            download_hash(rpm_arch_list)
-            source = os.listdir(sourcepath)
-            for files in source:
-                if files.endswith('.rpm'):
-                    # target dir + foo.x86_64.rpm to dir
-                    if not os.path.exists(tiny_repo):
-                        os.makedirs(tiny_repo)
-                    shutil.copy(sourcepath + files, tiny_repo)
-            sign_rpm(tiny_repo)
-            for rpm in os.listdir(tiny_repo):
-                # move all rpm filex exclude debuginfo
-                if 'debuginfo' not in rpm:
-                    print("moving %s to %s" % (rpm, repo))
-                    shutil.copy(tiny_repo + rpm, repo)
-            repo_lock(repo)
+    # run in parallel
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_docker = {executor.submit(
+            invoke_docker, arch): arch for arch in arches}
+        for future in concurrent.futures.as_completed(future_to_docker):
+            status = future_to_docker[future]
             try:
-                subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                         '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', repo])
-                repo_unlock(repo)
-            except:
-                print('publishing failed, rollbacking rpms')
-                repo_unlock(repo)
-                # rollback rpms
-                shutil.copy(backup_repo + rpm, repo)
-
-                # rollback rpms
-            # move debuginfo in place
-            for debug_rpm in os.listdir(tiny_repo):
-                if 'debuginfo' in debug_rpm:
-                    print("moving %s to %s" % (debug_rpm, debug_repo))
-                    shutil.copy(tiny_repo + debug_rpm, debug_repo)
-            if os.path.exists(debug_repo):
-                repo_lock(debug_repo)
-                try:
-                    subprocess.check_output(
-                        ['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', debug_repo])
-                    repo_unlock(debug_repo)
-                except:
-                    print('publishing failed, rollbacking rpms')
-                    repo_unlock(debug_repo)
-                    # rollback rpms
-                    shutil.copy(backup_debug_repo + debug_rpm, debug_repo)
-            shutil.rmtree(tiny_repo)
+                data = future.result()
+            except Exception as exc:
+                print('%r generated an exception: %s' % (status, exc))
+            else:
+                print('%r repo metadata recreated' % (status))
 
 
 def regenerate_metadata_repo(action):
@@ -273,23 +291,9 @@ def regenerate_metadata_repo(action):
             path = repository_path + '/' + arch + '/' + repository_name + '/' + status
             # /share/platforms/rolling/repository/i686/main/release-rpm-new
             # /share/platforms/cooker/repository/riscv64/main
-            sign_rpm(path)
-#            print("running metadata generator for %s" % path)
-            # create .publish.lock
-            repo_lock(path)
-            try:
-                subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                         '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', path, action])
-                repo_unlock(path)
-            except:
-                print("something went wrong with publishing for %s" % path)
-                repo_unlock(path)
-    else:
-        for arch in arches:
-            path = repository_path + '/' + arch + '/' + repository_name + '/' + status
-            # /share/platforms/cooker/repository/riscv64/main
-            sign_rpm(path)
-#            print("running metadata generator for %s" % path)
+            if resign == 'true':
+                sign_rpm(path)
+            print("running metadata generator for %s" % path)
             # create .publish.lock
             repo_lock(path)
             try:
@@ -300,11 +304,11 @@ def regenerate_metadata_repo(action):
                 print("something went wrong with publishing for %s" % path)
                 repo_unlock(path)
 
-
-# regenerate_metadata_repo()
 
 if __name__ == '__main__':
+    generate_rpmmacros()
     if regenerate_metadata == 'true':
         regenerate_metadata_repo('regenerate')
+
     if regenerate_metadata == '':
         prepare_rpms()
