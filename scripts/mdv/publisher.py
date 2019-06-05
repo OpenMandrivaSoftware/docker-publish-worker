@@ -172,8 +172,10 @@ def backup_rpms(old_list, backup_repo):
     backup_debug_repo = repository_path + '/' + \
         arch[1] + '/' + 'debug_' + repository_name + \
         '/' + status + '-rpm-backup/'
-    shutil.rmtree(backup_repo)
-    shutil.rmtree(backup_debug_repo)
+    if os.path.exists(backup_repo) and os.path.isdir(backup_repo):
+        shutil.rmtree(backup_repo)
+    if os.path.exists(backup_debug_repo) and os.path.isdir(backup_debug_repo):
+        shutil.rmtree(backup_debug_repo)
 
     if os.path.exists(old_list) and os.path.getsize(old_list) > 0:
         with open(old_list, 'r') as fp:
@@ -271,7 +273,7 @@ def regenerate_metadata_repo(action):
             path = repository_path + '/' + arch + '/' + repository_name + '/' + status
             # /share/platforms/rolling/repository/i686/main/release-rpm-new
             # /share/platforms/cooker/repository/riscv64/main
-#            sign_rpm(path)
+            sign_rpm(path)
 #            print("running metadata generator for %s" % path)
             # create .publish.lock
             repo_lock(path)
@@ -286,7 +288,7 @@ def regenerate_metadata_repo(action):
         for arch in arches:
             path = repository_path + '/' + arch + '/' + repository_name + '/' + status
             # /share/platforms/cooker/repository/riscv64/main
-#            sign_rpm(path)
+            sign_rpm(path)
 #            print("running metadata generator for %s" % path)
             # create .publish.lock
             repo_lock(path)
