@@ -65,7 +65,7 @@ module AbfWorker
       [
         'cd ' + ROOT + '/scripts/' + @platform_type + ';',
         @cmd_params,
-        ' /bin/bash '
+        ' /usr/bin/python '
       ]
     end
 
