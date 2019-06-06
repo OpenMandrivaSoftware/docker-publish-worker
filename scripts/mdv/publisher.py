@@ -230,10 +230,12 @@ def invoke_docker(arch):
                     os.makedirs(tiny_repo)
                 shutil.copy(sourcepath + files, tiny_repo)
         sign_rpm(tiny_repo)
+        rpm_list = []
         for rpm in os.listdir(tiny_repo):
             # move all rpm filex exclude debuginfo
             if 'debuginfo' not in rpm:
                 print("moving %s to %s" % (rpm, repo))
+                rpm_list.append(rpm)
                 shutil.copy(tiny_repo + rpm, repo)
         repo_lock(repo)
         try:
@@ -248,11 +250,13 @@ def invoke_docker(arch):
 
             # rollback rpms
         # move debuginfo in place
+        debug_rpm_list = []
         for debug_rpm in os.listdir(tiny_repo):
             if 'debuginfo' in debug_rpm:
                 print("moving %s to %s" % (debug_rpm, debug_repo))
                 shutil.copy(tiny_repo + debug_rpm, debug_repo)
-        if os.path.exists(debug_repo):
+                debug_rpm_list.append(debug_rpm)
+        if os.path.exists(debug_repo) and debug_rpm_list:
             repo_lock(debug_repo)
             try:
                 subprocess.check_output(
