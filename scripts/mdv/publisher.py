@@ -17,8 +17,6 @@ key_server = 'pool.sks-keyservers.net'
 OMV_key = 'BF81DE15'
 gnupg_path = '/root/.gnupg'
 use_debug_repo = 'true'
-arches = ['SRPMS', 'i686', 'x86_64',
-          'armv7hnl', 'aarch64', 'znver1', 'riscv64']
 
 # i.e cooker
 save_to_platform = os.environ.get('SAVE_TO_PLATFORM')
@@ -47,6 +45,15 @@ gpg_dir = get_home + '/.gnupg'
 rpm_macro = get_home + '/.rpmmacros'
 # /root/docker-publish-worker/container
 container_path = get_home + '/docker-publish-worker/container'
+
+if save_to_platform == 'cooker' or 'rock' or 'rolling' or '4.0':
+    metadata_generator = 'openmandriva/createrepo'
+    arches = ['SRPMS', 'i686', 'x86_64',
+              'armv7hnl', 'aarch64', 'znver1', 'riscv64']
+if save_to_platform == '3.0':
+    metadata_generator = 'openmandriva/genhdlists2'
+    arches = ['i586', 'x86_64']
+
 
 if released == 'false':
     status = 'release'
@@ -240,7 +247,7 @@ def invoke_docker(arch):
         repo_lock(repo)
         try:
             subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                     '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', repo])
+                                     '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, repo])
             repo_unlock(repo)
         except:
             print('publishing failed, rollbacking rpms')
@@ -260,7 +267,7 @@ def invoke_docker(arch):
             repo_lock(debug_repo)
             try:
                 subprocess.check_output(
-                    ['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', debug_repo])
+                    ['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, debug_repo])
                 repo_unlock(debug_repo)
             except:
                 print('publishing failed, rollbacking rpms')
@@ -302,7 +309,7 @@ def regenerate_metadata_repo(action):
             repo_lock(path)
             try:
                 subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                         '/var/lib/openmandriva/abf-downloads:/share/platforms', 'openmandriva/createrepo', path, action])
+                                         '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, path, action])
                 repo_unlock(path)
             except:
                 print("something went wrong with publishing for %s" % path)
