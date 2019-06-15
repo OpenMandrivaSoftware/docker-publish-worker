@@ -322,6 +322,5 @@ if __name__ == '__main__':
     generate_rpmmacros()
     if regenerate_metadata == 'true':
         regenerate_metadata_repo('regenerate')
-
-    if regenerate_metadata == '':
+    else:
         prepare_rpms()
