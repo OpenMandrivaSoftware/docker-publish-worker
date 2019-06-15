@@ -254,6 +254,7 @@ def invoke_docker(arch):
             repo_unlock(repo)
             # rollback rpms
             shutil.copy(backup_repo + rpm, repo)
+            sys.exit(1)
 
             # rollback rpms
         # move debuginfo in place
@@ -274,6 +275,7 @@ def invoke_docker(arch):
                 repo_unlock(debug_repo)
                 # rollback rpms
                 shutil.copy(backup_debug_repo + debug_rpm, debug_repo)
+                sys.exit(1)
         shutil.rmtree(tiny_repo)
 
 
