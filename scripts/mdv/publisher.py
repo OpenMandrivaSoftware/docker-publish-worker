@@ -165,6 +165,8 @@ def repo_lock(path):
         print(".publish.lock exist, let wait a bit...")
         time.sleep(60)
     print("creating %s/.publish.lock" % path)
+    if not os.path.isdir(path):
+        os.makedirs(path)
     open(path + '/.publish.lock', 'a').close()
 
 
