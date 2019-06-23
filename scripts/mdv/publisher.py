@@ -155,6 +155,9 @@ def sign_rpm(path):
                 subprocess.check_output(['rpm', '--addsign', rpm])
             except:
                 print('something went wrong with signing rpm %s' % rpm)
+                print('waiting for 5 second and try resign again')
+                time.sleep(5)
+                subprocess.check_output(['rpm', '--addsign', rpm])
                 continue
     else:
         print("no key provided, signing disabled")
