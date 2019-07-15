@@ -81,7 +81,7 @@ def download_hash(hashfile, arch):
                 name = page2[0]['file_name']
                 print("%s %s" % (name, fstore_file_url))
                 # curl -O -L http://file-store.openmandriva.org/api/v1/file_stores/169a726a478251325230bf3aec3a8cc04444ed3b
-                download_file = requests.get(fstore_file_url)
+                download_file = requests.get(fstore_file_url, stream=True)
                 tmp_dir = '/tmp/' + arch
                 tmp_name = '/tmp/' + arch + '/' + name
                 if not os.path.exists(tmp_dir):
