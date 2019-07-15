@@ -88,7 +88,9 @@ def download_hash(hashfile, arch):
                     os.makedirs(tmp_dir)
 
                 with open(tmp_name, 'wb') as f:
-                    f.write(download_file.content)
+                    for chunk in download_file.iter_content(chunk_size=1048576):
+                        if chunk:
+                            f.write(chunk)
 
 
 def key_stuff():
