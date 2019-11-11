@@ -4,6 +4,7 @@ import requests
 import re
 import os
 import json
+import sys
 import subprocess
 import time
 import shutil
@@ -258,14 +259,15 @@ def invoke_docker(arch):
             subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
                                      '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, repo])
             repo_unlock(repo)
-        except:
+        except subprocess.CalledProcessError:
             print('publishing failed, rollbacking rpms')
             repo_unlock(repo)
             # rollback rpms
             shutil.copy(backup_repo + rpm, repo)
             sys.exit(1)
-
-            # rollback rpms
+        # sign repodata/repomd.xml
+        subprocess.check_output(['/usr/bin/gpg', '--yes', '--pinentry-mode loopback', '--passphrase-file /root/.gnupg/secret',
+                                 '--detach-sign', '--armor', repo + '/repodata/repomd.xml'])
         # move debuginfo in place
         debug_rpm_list = []
         for debug_rpm in os.listdir(tiny_repo):
@@ -281,12 +283,14 @@ def invoke_docker(arch):
                 subprocess.check_output(
                     ['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, debug_repo])
                 repo_unlock(debug_repo)
-            except:
+            except subprocess.CalledProcessError:
                 print('publishing failed, rollbacking rpms')
                 repo_unlock(debug_repo)
                 # rollback rpms
                 shutil.copy(backup_debug_repo + debug_rpm, debug_repo)
                 sys.exit(1)
+            subprocess.check_output(['/usr/bin/gpg', '--yes', '--pinentry-mode loopback', '--passphrase-file /root/.gnupg/secret',
+                                     '--detach-sign', '--armor', debug_repo + '/repodata/repomd.xml'])
         shutil.rmtree(tiny_repo)
 
 
@@ -324,9 +328,13 @@ def regenerate_metadata_repo(action):
                 subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
                                          '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, path, action])
                 repo_unlock(path)
-            except:
+            except subprocess.CalledProcessError:
                 print("something went wrong with publishing for %s" % path)
                 repo_unlock(path)
+            # gpg --yes --pinentry-mode loopback --passphrase-file /root/.gnupg/secret --detach-sign --armor repodata/repomd.xml
+            # sign repodata/repomd.xml
+            subprocess.check_output(['/usr/bin/gpg', '--yes', '--pinentry-mode loopback', '--passphrase-file /root/.gnupg/secret',
+                                     '--detach-sign', '--armor', path + '/repodata/repomd.xml'])
 
 
 if __name__ == '__main__':
