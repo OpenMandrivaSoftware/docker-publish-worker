@@ -33,8 +33,6 @@ repository_name = os.environ.get('REPOSITORY_NAME')
 released = os.environ.get('RELEASED')
 # testing = true/false
 testing = os.environ.get('TESTING')
-save_to_platform = os.environ.get('SAVE_TO_PLATFORM')
-repository_name = os.environ.get('REPOSITORY_NAME')
 
 is_container = os.environ.get('IS_CONTAINER')
 regenerate_metadata = os.environ.get('REGENERATE_METADATA')
@@ -273,7 +271,7 @@ def invoke_docker(arch):
         repo_lock(repo)
         try:
             subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                     '{}:/share/platforms', metadata_generator, repo])
+                                     abf_repo_path, metadata_generator, repo])
             repo_unlock(repo)
         except subprocess.CalledProcessError:
             print('publishing failed, rollbacking rpms')
