@@ -18,6 +18,11 @@ OMV_key = 'BF81DE15'
 gnupg_path = '/root/.gnupg'
 use_debug_repo = 'true'
 file_store_base = os.environ.get('FILE_STORE_ADDR')
+if file_store_base == 'http://file-store.openmandriva.org':
+    abf_repo_path = '/var/lib/openmandriva/abf-downloads:/share/platforms'
+else:
+    abf_repo_path = '/home/abf/abf-downloads/:/share/platforms'
+
 
 # i.e cooker
 save_to_platform = os.environ.get('SAVE_TO_PLATFORM')
@@ -82,14 +87,11 @@ def download_hash(hashfile, arch):
     with open(hashfile, 'r') as fp:
         lines = [line.strip() for line in fp]
         for hash1 in lines:
-            fstore_json_url = '{}/api/v1/file_stores.json?hash={}'.format(
-                file_store_base, hash1)
-            fstore_file_url = '{}/api/v1/file_stores/{}'.format(
-                file_store_base, hash1)
+            fstore_json_url = '{}/api/v1/file_stores.json?hash={}'.format(file_store_base, hash1)
+            fstore_file_url = '{}/api/v1/file_stores/{}'.format(file_store_base, hash1)
             resp = requests.get(fstore_json_url)
             if resp.status_code == 404:
-                print('requested package [{}] not found'.format(
-                    fstore_json_url))
+                print('requested package [{}] not found'.format(fstore_json_url))
             if resp.status_code == 200:
                 page = resp.content.decode('utf-8')
                 page2 = json.loads(page)
@@ -271,7 +273,7 @@ def invoke_docker(arch):
         repo_lock(repo)
         try:
             subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                     '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, repo])
+                                     '{}:/share/platforms', metadata_generator, repo])
             repo_unlock(repo)
         except subprocess.CalledProcessError:
             print('publishing failed, rollbacking rpms')
@@ -295,7 +297,7 @@ def invoke_docker(arch):
             repo_lock(debug_repo)
             try:
                 subprocess.check_output(
-                    ['/usr/bin/docker', 'run', '--rm', '-v', '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, debug_repo])
+                    ['/usr/bin/docker', 'run', '--rm', '-v', abf_repo_path, metadata_generator, debug_repo])
                 repo_unlock(debug_repo)
             except subprocess.CalledProcessError:
                 print('publishing failed, rollbacking rpms')
@@ -339,8 +341,7 @@ def regenerate_metadata_repo(action):
             # create .publish.lock
             repo_lock(path)
             try:
-                subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v',
-                                         '/var/lib/openmandriva/abf-downloads:/share/platforms', metadata_generator, path, action])
+                subprocess.check_output(['/usr/bin/docker', 'run', '--rm', '-v', abf_repo_path, metadata_generator, path, action])
                 repo_unlock(path)
             except subprocess.CalledProcessError:
                 print("something went wrong with publishing for %s" % path)
