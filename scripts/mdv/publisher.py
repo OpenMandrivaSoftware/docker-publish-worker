@@ -13,11 +13,11 @@ import concurrent.futures
 # RELEASED=false REPOSITORY_NAME=main PLATFORM_PATH=/share/platforms/cooker/repository REGENERATE_METADATA= python publisher.py
 
 # static values
-file_store_base = 'http://file-store.openmandriva.org'
 key_server = 'pool.sks-keyservers.net'
 OMV_key = 'BF81DE15'
 gnupg_path = '/root/.gnupg'
 use_debug_repo = 'true'
+file_store_base = os.environ.get('FILE_STORE_ADDR')
 
 # i.e cooker
 save_to_platform = os.environ.get('SAVE_TO_PLATFORM')
@@ -39,8 +39,6 @@ resign = os.environ.get('RESIGN')
 # arch = 'x86_64'
 # repository_path = repository_path + '/' + arch + '/' + repository_name
 
-build_id = "$ID"
-
 get_home = os.environ.get('HOME')
 gpg_dir = get_home + '/.gnupg'
 rpm_macro = get_home + '/.rpmmacros'
@@ -53,6 +51,22 @@ if save_to_platform == 'cooker' or 'rock' or 'rolling' or '4.0':
               'armv7hnl', 'aarch64', 'znver1', 'riscv64']
 if save_to_platform == '3.0':
     metadata_generator = 'openmandriva/genhdlists2'
+    arches = ['i586', 'x86_64']
+
+if save_to_platform == 'rosa2012.1' or 'rosa2014.1' or 'rosa2016.1' or 'rosa2019.0':
+    metadata_generator = 'rosalab/genhdlists2'
+    arches = ['i586', 'x86_64']
+
+if save_to_platform == 'rosa2019.1':
+    metadata_generator = 'rosalab/createrepo:2019.1'
+    arches = ['i586', 'x86_64']
+
+if re.match(r"rosa-virt(.*)", platform):
+    metadata_generator = 'rosalab/createrepo'
+    arches = ['i586', 'x86_64']
+
+if re.match(r"rosa-server(.*)", platform):
+    metadata_generator = 'rosalab/createrepo'
     arches = ['i586', 'x86_64']
 
 
