@@ -56,23 +56,6 @@ if save_to_platform == '3.0':
     metadata_generator = 'openmandriva/genhdlists2'
     arches = ['i586', 'x86_64']
 
-if save_to_platform == 'rosa2012.1' or 'rosa2014.1' or 'rosa2016.1' or 'rosa2019.0':
-    metadata_generator = 'rosalab/genhdlists2'
-    arches = ['i586', 'x86_64']
-
-if save_to_platform == 'rosa2019.1':
-    metadata_generator = 'rosalab/createrepo:2019.1'
-    arches = ['i586', 'x86_64']
-
-if re.match(r"rosa-virt(.*)", platform):
-    metadata_generator = 'rosalab/createrepo'
-    arches = ['i586', 'x86_64']
-
-if re.match(r"rosa-server(.*)", platform):
-    metadata_generator = 'rosalab/createrepo'
-    arches = ['i586', 'x86_64']
-
-
 if released == 'false':
     status = 'release'
 if released == 'true':
