@@ -21,7 +21,7 @@ OMV_key = 'BF81DE15'
 gnupg_path = '/root/.gnupg'
 use_debug_repo = 'true'
 file_store_base = 'https://file-store.openmandriva.org'
-abf_repo_path = '/var/lib/openmandriva/abf-downloads:/share/platforms'
+abf_repo_path = '/media/space/openmandriva/abf-downloads:/share/platforms'
 
 
 # i.e cooker
