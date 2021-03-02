@@ -49,7 +49,7 @@ rpm_macro = get_home + '/.rpmmacros'
 container_path = get_home + '/docker-publish-worker/container'
 
 if save_to_platform == 'cooker' or 'rock' or 'rolling' or '4.0':
-    metadata_generator = 'openmandriva/createrepo'
+    metadata_generator = 'openmandriva/createrepo:aarch64'
     arches = ['SRPMS', 'i686', 'x86_64',
               'armv7hnl', 'aarch64', 'znver1', 'riscv64']
 if save_to_platform == '3.0':
