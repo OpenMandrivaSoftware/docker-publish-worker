@@ -157,7 +157,18 @@ def sign_rpm(path):
                 print('something went wrong with signing rpm %s' % rpm)
                 print('waiting for 5 second and try resign again')
                 time.sleep(5)
-                subprocess.check_output(['rpm', '--addsign', rpm])
+                try:
+                    subprocess.check_output(['rpm', '--addsign', rpm])
+                except:
+                    print('Signing %s still failed, giving it another minute to finish uploading' % rpm)
+                    time.sleep(60)
+                    try:
+                        subprocess.check_output(['rpm', '--addsign', rpm])
+                    except:
+                        print('Signing %s still failed. Probably the package is corrupted.' % rpm)
+                        print('Deleting it to prevent it from getting stuck')
+                        print('and blocking the publisher. Please rebuild it!')
+                        os.remove(rpm)
                 continue
     else:
         print("no key provided, signing disabled")
