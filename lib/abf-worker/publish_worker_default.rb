@@ -27,12 +27,12 @@ module AbfWorker
       -POST -F "file_store[file]=@#{log_path}" --connect-timeout 5 --retry 5 \
       #{APP_CONFIG['file_store']['create_url']}`
 
-      results = {id:                   @options['id'],
-                 status:               @status,
-                 extra:                @options['extra'],
-                 projects_for_cleanup: @options['projects_for_cleanup'],
-                 build_list_ids: @options['build_list_ids'],
-                 results: [{file_name: 'publish.log', sha1: log_sha1, size: log_size}] }
+      results = {"id" => @options['id'],
+                 "status" => @status,
+                 "extra" => @options['extra'],
+                 "projects_for_cleanup" => @options['projects_for_cleanup'],
+                 "build_list_ids" => @options['build_list_ids'],
+                 "results" => [{"file_name" => 'publish.log', "sha1" => log_sha1, "size" => log_size}] }
       Sidekiq::Client.push(
         'queue' => 'publish_observer',
         'class' => 'AbfWorker::PublishObserver',
