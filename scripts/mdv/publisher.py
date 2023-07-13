@@ -152,18 +152,18 @@ def sign_rpm(path):
         for rpm in files:
             try:
                 print('signing rpm %s' % rpm)
-                subprocess.check_output(['rpm', '--addsign', rpm])
+                subprocess.check_output(['rpmsign', '--addsign', rpm])
             except:
                 print('something went wrong with signing rpm %s' % rpm)
                 print('waiting for 5 second and try resign again')
                 time.sleep(5)
                 try:
-                    subprocess.check_output(['rpm', '--addsign', rpm])
+                    subprocess.check_output(['rpmsign', '--addsign', rpm])
                 except:
                     print('Signing %s still failed, giving it another minute to finish uploading' % rpm)
                     time.sleep(60)
                     try:
-                        subprocess.check_output(['rpm', '--addsign', rpm])
+                        subprocess.check_output(['rpmsign', '--addsign', rpm])
                     except:
                         print('Signing %s still failed. Probably the package is corrupted.' % rpm)
                         print('Deleting it to prevent it from getting stuck')
