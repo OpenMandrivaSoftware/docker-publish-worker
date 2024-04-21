@@ -14,6 +14,9 @@ import concurrent.futures
 
 # need to separate flies from cutlets
 debug_stuff = ['debuginfo', 'debugsource']
+# glibc-debuginfo is required by valgrind, so it should be available
+# even if only the main repo is enabled
+debug_exceptions = ['glibc-debuginfo']
 
 # static values
 key_server = 'pool.sks-keyservers.net'
@@ -212,6 +215,9 @@ def backup_rpms(old_list, backup_repo):
             if not os.path.exists(backup_debug_repo):
                 os.makedirs(backup_debug_repo)
             for rpm in lines:
+                if any(e in rpm for e in debug_exceptions):
+                    print("backup: NOT moving %s to %s (in debug_exceptions)" % (rpm, backup_debug_repo))
+                    continue
                 if any(ele in rpm for ele in debug_stuff):
                     if os.path.exists(debug_repo + '/' + rpm):
                         print("moving %s to %s" % (rpm, backup_repo))
@@ -255,7 +261,10 @@ def invoke_docker(arch):
         sign_rpm(tiny_repo)
         rpm_list = []
         for rpm in os.listdir(tiny_repo):
-            # move all rpm filex exclude debuginfo
+            # move all rpm files excluding debuginfo
+            if any(e in rpm for e in debug_exceptions):
+                print("backup: NOT moving %s to %s (in debug_exceptions)" % (rpm, repo))
+                continue
             if not any(ele in rpm for ele in debug_stuff):
                 if not os.path.exists(repo):
                     os.makedirs(repo)
@@ -279,6 +288,9 @@ def invoke_docker(arch):
         # move debuginfo in place
         debug_rpm_list = []
         for debug_rpm in os.listdir(tiny_repo):
+            if any(e in debug_rpm for e in debug_exceptions):
+                print("NOT moving %s to %s (in debug_exceptions)" % (debug_rpm, debug_repo))
+                continue
             if any(ele in debug_rpm for ele in debug_stuff):
                 print("moving %s to %s" % (debug_rpm, debug_repo))
                 if not os.path.exists(debug_repo):
